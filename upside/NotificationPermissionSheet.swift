@@ -63,15 +63,15 @@ struct NotificationPermissionSheet: View {
         switch userRole {
         case .creator:
             return [
-                ("bell.badge.fill", "Stay informed about match statuses"),
-                ("exclamationmark.triangle.fill", "Get alerted if you're missing info"),
+                ("bell.badge.fill", "Stay informed about matches"),
+                ("exclamationmark.triangle.fill", "Get alerts for missing info"),
                 ("chart.line.uptrend.xyaxis", "Receive performance updates")
             ]
         case .brand:
             return [
                 ("person.2.fill", "Get notified when creators apply"),
-                ("chart.bar.fill", "Track campaign performance metrics"),
-                ("dollarsign.circle.fill", "Receive payment and invoice alerts")
+                ("chart.bar.fill", "Track campaign performance"),
+                ("dollarsign.circle.fill", "Receive payment alerts")
             ]
         }
     }
@@ -163,7 +163,7 @@ struct NotificationPermissionSheet: View {
                         isPresented = false
                         onComplete()
                     }) {
-                        Text("Not now")
+                        Text("Ask me later")
                             .font(.system(size: 16, weight: .medium))
                             .foregroundColor(.white.opacity(0.6))
                     }
@@ -269,7 +269,7 @@ struct BenefitRow: View {
                 .frame(width: 20)
             
             Text(text)
-                .font(.system(size: 15, weight: .medium))
+                .font(.system(size: 19, weight: .medium))
                 .foregroundColor(.white.opacity(0.8))
             
             Spacer()
