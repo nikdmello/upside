@@ -22,6 +22,8 @@ enum UserRole: String, CaseIterable {
 
 enum OnboardingStep: CaseIterable {
     case welcome
+    case login
+    case signUp
     case roleSelection
     case auth
     case accountCreation
@@ -39,6 +41,7 @@ class OnboardingState: ObservableObject {
     @Published var selectedRole: UserRole?
     @Published var isComplete: Bool = false
     @Published var showNotificationSheet: Bool = false
+    @Published var isLoginFlow: Bool = false
     
     func moveToNext() {
         guard let currentIndex = OnboardingStep.allCases.firstIndex(of: currentStep),
@@ -54,6 +57,20 @@ class OnboardingState: ObservableObject {
     
     func completeNotifications() {
         showNotificationSheet = false
-        currentStep = .auth
+        currentStep = .accountCreation
+    }
+    
+    func startSignUp() {
+        currentStep = .roleSelection
+    }
+    
+    func startLogin() {
+        isLoginFlow = true
+        currentStep = .login
+    }
+    
+    func completeLoginNotifications() {
+        showNotificationSheet = false
+        currentStep = .accountCreation
     }
 }

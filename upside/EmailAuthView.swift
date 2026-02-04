@@ -85,7 +85,7 @@ struct EmailAuthView: View {
         .onAppear {
             isAnimated = true
         }
-        .onChange(of: authManager.isAuthenticated) { authenticated in
+        .onChange(of: authManager.isAuthenticated) { _, authenticated in
             if authenticated {
                 onAuthComplete()
             }

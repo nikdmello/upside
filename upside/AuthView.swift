@@ -2,7 +2,8 @@ import SwiftUI
 import AuthenticationServices
 
 struct AuthView: View {
-    let userRole: UserRole
+    let userRole: UserRole?
+    let isLogin: Bool
     let onAuthComplete: () -> Void
     @State private var isAnimated = false
     @State private var showEmailAuth = false
@@ -19,7 +20,7 @@ struct AuthView: View {
             
             VStack(spacing: 0) {
                 VStack(spacing: 20) {
-                    Text("Create your\naccount")
+                    Text(isLogin ? "Welcome back" : "Create your\naccount")
                         .font(.system(size: 32, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
@@ -27,7 +28,7 @@ struct AuthView: View {
                         .offset(y: isAnimated ? 0 : -20)
                         .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
                     
-                    Text("Join as a \(userRole.displayName.lowercased()) and start connecting")
+                    Text(isLogin ? "Sign in to continue" : "Join as a \(userRole?.displayName.lowercased() ?? "user") and start connecting")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.7))
                         .multilineTextAlignment(.center)
@@ -121,7 +122,7 @@ struct AuthView: View {
         .onAppear {
             isAnimated = true
         }
-        .onChange(of: authManager.isAuthenticated) { authenticated in
+        .onChange(of: authManager.isAuthenticated) { _, authenticated in
             if authenticated {
                 onAuthComplete()
             }
@@ -197,5 +198,5 @@ struct AuthButton: View {
 }
 
 #Preview {
-    AuthView(userRole: .creator, onAuthComplete: {})
+    AuthView(userRole: .creator, isLogin: false, onAuthComplete: {})
 }

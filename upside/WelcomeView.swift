@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct WelcomeView: View {
-    let onContinue: () -> Void
+    let onSignUp: () -> Void
+    let onLogin: () -> Void
     @State private var isAnimated = false
-
     
     var body: some View {
         ZStack {
@@ -57,34 +57,44 @@ struct WelcomeView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                    impactFeedback.impactOccurred()
-                    onContinue()
-                }) {
-                    HStack {
-                        Text("Get Started")
+                VStack(spacing: 16) {
+                    Button(action: {
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                        onSignUp()
+                    }) {
+                        Text("Create Account")
                             .font(.system(size: 20, weight: .semibold))
-                        
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 60)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.white, Color.gray.opacity(0.9)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
+                            .cornerRadius(30)
+                            .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
                     }
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-                    .background(
-                        LinearGradient(
-                            colors: [Color.white, Color.gray.opacity(0.9)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
-                    .cornerRadius(30)
-                    .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
+                    .scaleEffect(isAnimated ? 1.0 : 0.9)
+                    .opacity(isAnimated ? 1 : 0)
+                    .animation(.easeOut(duration: 0.6).delay(0.8), value: isAnimated)
+                    
+                    Button(action: {
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                        onLogin()
+                    }) {
+                        Text("Sign In")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.white.opacity(0.8))
+                    }
+                    .scaleEffect(isAnimated ? 1.0 : 0.9)
+                    .opacity(isAnimated ? 1 : 0)
+                    .animation(.easeOut(duration: 0.6).delay(1.0), value: isAnimated)
                 }
-                .scaleEffect(isAnimated ? 1.0 : 0.9)
-                .opacity(isAnimated ? 1 : 0)
-                .animation(.easeOut(duration: 0.6).delay(0.8), value: isAnimated)
                 .padding(.horizontal, 32)
                 .padding(.bottom, 50)
             }
@@ -93,9 +103,8 @@ struct WelcomeView: View {
             isAnimated = true
         }
     }
-
 }
 
 #Preview {
-    WelcomeView(onContinue: {})
+    WelcomeView(onSignUp: {}, onLogin: {})
 }

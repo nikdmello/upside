@@ -15,11 +15,55 @@ struct OnboardingCoordinatorView: View {
             Group {
                 switch onboardingState.currentStep {
                 case .welcome:
-                    WelcomeView(onContinue: {
+                    WelcomeView(
+                        onSignUp: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onboardingState.startSignUp()
+                            }
+                        },
+                        onLogin: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onboardingState.startLogin()
+                            }
+                        }
+                    )
+                    
+                case .login:
+                    AuthView(
+                        userRole: nil,
+                        isLogin: true,
+                        onAuthComplete: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onboardingState.selectedRole = .creator
+                                onboardingState.showNotificationSheet = true
+                            }
+                        }
+                    )
+                    .sheet(isPresented: $onboardingState.showNotificationSheet) {
+                        NotificationPermissionSheet(
+                            isPresented: $onboardingState.showNotificationSheet,
+                            userRole: onboardingState.selectedRole ?? .creator,
+                            onComplete: {
+                                onboardingState.completeLoginNotifications()
+                            }
+                        )
+                    }
+                    
+                case .signUp:
+                    RoleSelectorView(onRoleSelected: { role in
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            onboardingState.currentStep = .roleSelection
+                            onboardingState.selectRole(role)
                         }
                     })
+                    .sheet(isPresented: $onboardingState.showNotificationSheet) {
+                        NotificationPermissionSheet(
+                            isPresented: $onboardingState.showNotificationSheet,
+                            userRole: onboardingState.selectedRole ?? .creator,
+                            onComplete: {
+                                onboardingState.completeNotifications()
+                            }
+                        )
+                    }
                     
                 case .roleSelection:
                     RoleSelectorView(onRoleSelected: { role in
@@ -39,7 +83,8 @@ struct OnboardingCoordinatorView: View {
                     
                 case .auth:
                     AuthView(
-                        userRole: onboardingState.selectedRole ?? .creator,
+                        userRole: onboardingState.selectedRole,
+                        isLogin: false,
                         onAuthComplete: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 onboardingState.currentStep = .accountCreation
@@ -48,13 +93,26 @@ struct OnboardingCoordinatorView: View {
                     )
                     
                 case .accountCreation:
-                    VStack {
-                        Text("Account Creation")
-                            .font(.largeTitle)
-                            .foregroundColor(.white)
-                        Text("Selected Role: \(onboardingState.selectedRole?.displayName ?? "None")")
-                            .font(.headline)
-                            .foregroundColor(.white.opacity(0.7))
+                    VStack(spacing: 0) {
+                        Spacer()
+                        
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.green, Color.blue],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 80, height: 80)
+                            
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 30, weight: .bold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        Spacer()
                     }
                     
                 default:
