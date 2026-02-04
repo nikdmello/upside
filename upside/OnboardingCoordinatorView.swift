@@ -35,19 +35,14 @@ struct OnboardingCoordinatorView: View {
                         onAuthComplete: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 onboardingState.selectedRole = .creator
-                                onboardingState.showNotificationSheet = true
+                                onboardingState.currentStep = .accountCreation
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    onboardingState.showNotificationSheet = true
+                                }
                             }
                         }
                     )
-                    .sheet(isPresented: $onboardingState.showNotificationSheet) {
-                        NotificationPermissionSheet(
-                            isPresented: $onboardingState.showNotificationSheet,
-                            userRole: onboardingState.selectedRole ?? .creator,
-                            onComplete: {
-                                onboardingState.completeLoginNotifications()
-                            }
-                        )
-                    }
                     
                 case .signUp:
                     RoleSelectorView(onRoleSelected: { role in
@@ -71,15 +66,6 @@ struct OnboardingCoordinatorView: View {
                             onboardingState.selectRole(role)
                         }
                     })
-                    .sheet(isPresented: $onboardingState.showNotificationSheet) {
-                        NotificationPermissionSheet(
-                            isPresented: $onboardingState.showNotificationSheet,
-                            userRole: onboardingState.selectedRole ?? .creator,
-                            onComplete: {
-                                onboardingState.completeNotifications()
-                            }
-                        )
-                    }
                     
                 case .auth:
                     AuthView(
@@ -114,6 +100,15 @@ struct OnboardingCoordinatorView: View {
                         
                         Spacer()
                     }
+                    .sheet(isPresented: $onboardingState.showNotificationSheet) {
+                        NotificationPermissionSheet(
+                            isPresented: $onboardingState.showNotificationSheet,
+                            userRole: onboardingState.selectedRole ?? .creator,
+                            onComplete: {
+                                onboardingState.completeNotifications()
+                            }
+                        )
+                    }
                     
                 default:
                     VStack {
@@ -130,6 +125,31 @@ struct OnboardingCoordinatorView: View {
                 insertion: .move(edge: .trailing).combined(with: .opacity),
                 removal: .move(edge: .leading).combined(with: .opacity)
             ))
+            
+            if onboardingState.previousStep != nil {
+                VStack {
+                    HStack {
+                        Button(action: {
+                            let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                            impactFeedback.impactOccurred()
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onboardingState.goBack()
+                            }
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.white.opacity(0.4))
+                                .frame(width: 44, height: 44)
+                        }
+                        
+                        Spacer()
+                    }
+                    .padding(.horizontal, 32)
+                    .padding(.top, 80)
+                    
+                    Spacer()
+                }
+            }
         }
     }
 }

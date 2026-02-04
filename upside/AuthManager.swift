@@ -72,7 +72,7 @@ extension AuthManager: ASAuthorizationControllerPresentationContextProviding {
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first else {
-            return ASPresentationAnchor()
+            fatalError("No window scene available")
         }
         return window
     }
