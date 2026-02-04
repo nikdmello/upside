@@ -43,6 +43,16 @@ class OnboardingState: ObservableObject {
     @Published var showNotificationSheet: Bool = false
     @Published var isLoginFlow: Bool = false
     
+    var previousStep: OnboardingStep? {
+        switch currentStep {
+        case .roleSelection: return .welcome
+        case .login: return .welcome
+        case .auth: return .roleSelection
+        case .accountCreation: return nil
+        default: return nil
+        }
+    }
+    
     func moveToNext() {
         guard let currentIndex = OnboardingStep.allCases.firstIndex(of: currentStep),
               currentIndex < OnboardingStep.allCases.count - 1 else { return }
@@ -52,12 +62,15 @@ class OnboardingState: ObservableObject {
     
     func selectRole(_ role: UserRole) {
         selectedRole = role
-        showNotificationSheet = true
+        currentStep = .accountCreation
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.showNotificationSheet = true
+        }
     }
     
     func completeNotifications() {
         showNotificationSheet = false
-        currentStep = .accountCreation
     }
     
     func startSignUp() {
@@ -71,6 +84,24 @@ class OnboardingState: ObservableObject {
     
     func completeLoginNotifications() {
         showNotificationSheet = false
-        currentStep = .accountCreation
+    }
+    
+    func goBack() {
+        switch currentStep {
+        case .roleSelection:
+            currentStep = .welcome
+        case .login:
+            currentStep = .welcome
+        case .auth:
+            currentStep = .roleSelection
+        case .accountCreation:
+            if isLoginFlow {
+                currentStep = .login
+            } else {
+                currentStep = .auth
+            }
+        default:
+            break
+        }
     }
 }
