@@ -23,6 +23,7 @@ enum UserRole: String, CaseIterable {
 enum OnboardingStep: CaseIterable {
     case welcome
     case roleSelection
+    case auth
     case accountCreation
     case creatorProfile
     case creatorLicense
@@ -49,5 +50,10 @@ class OnboardingState: ObservableObject {
     func selectRole(_ role: UserRole) {
         selectedRole = role
         showNotificationSheet = true
+    }
+    
+    func completeNotifications() {
+        showNotificationSheet = false
+        currentStep = .auth
     }
 }

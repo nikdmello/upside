@@ -6,6 +6,7 @@ struct NotificationPermissionSheet: View {
     @State private var currentNotificationIndex = 0
     @State private var isAnimating = false
     let userRole: UserRole
+    let onComplete: () -> Void
     
     var notifications: [NotificationModel] {
         switch userRole {
@@ -160,6 +161,7 @@ struct NotificationPermissionSheet: View {
                         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                         impactFeedback.impactOccurred()
                         isPresented = false
+                        onComplete()
                     }) {
                         Text("Not now")
                             .font(.system(size: 16, weight: .medium))
@@ -190,6 +192,7 @@ struct NotificationPermissionSheet: View {
                     print("Notification permission error: \(error)")
                 }
                 isPresented = false
+                onComplete()
             }
         }
     }
@@ -283,6 +286,7 @@ struct NotificationModel {
 #Preview {
     NotificationPermissionSheet(
         isPresented: .constant(true),
-        userRole: .creator
+        userRole: .creator,
+        onComplete: {}
     )
 }

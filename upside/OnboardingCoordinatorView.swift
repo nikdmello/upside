@@ -30,9 +30,22 @@ struct OnboardingCoordinatorView: View {
                     .sheet(isPresented: $onboardingState.showNotificationSheet) {
                         NotificationPermissionSheet(
                             isPresented: $onboardingState.showNotificationSheet,
-                            userRole: onboardingState.selectedRole ?? .creator
+                            userRole: onboardingState.selectedRole ?? .creator,
+                            onComplete: {
+                                onboardingState.completeNotifications()
+                            }
                         )
                     }
+                    
+                case .auth:
+                    AuthView(
+                        userRole: onboardingState.selectedRole ?? .creator,
+                        onAuthComplete: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onboardingState.currentStep = .accountCreation
+                            }
+                        }
+                    )
                     
                 case .accountCreation:
                     VStack {
