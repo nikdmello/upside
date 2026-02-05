@@ -7,12 +7,8 @@ struct RoleSelectorView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.05, green: 0.05, blue: 0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Color.black
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 VStack(spacing: 20) {
@@ -32,7 +28,7 @@ struct RoleSelectorView: View {
                     RoleCard(
                         role: .creator,
                         isSelected: selectedRole == .creator,
-                        gradient: [Color.purple, Color.pink],
+                        gradient: [Color.upsideGreen, Color.upsideGreen.opacity(0.7)],
                         onTap: { 
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                             impactFeedback.impactOccurred()
@@ -46,7 +42,7 @@ struct RoleSelectorView: View {
                     RoleCard(
                         role: .brand,
                         isSelected: selectedRole == .brand,
-                        gradient: [Color.blue, Color.cyan],
+                        gradient: [Color.upsideGreen, Color.upsideGreen.opacity(0.7)],
                         onTap: { 
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                             impactFeedback.impactOccurred()
@@ -78,22 +74,14 @@ struct RoleSelectorView: View {
                     .frame(maxWidth: .infinity)
                     .frame(height: 60)
                     .background(
-                        selectedRole != nil ? 
-                        LinearGradient(
-                            colors: [Color.white, Color.gray.opacity(0.9)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        ) :
-                        LinearGradient(
-                            colors: [Color.gray.opacity(0.3), Color.gray.opacity(0.2)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
+                        selectedRole != nil ?
+                        Color.upsideGreen :
+                        Color.upsideGreen.opacity(0.2)
                     )
                     .cornerRadius(30)
                     .shadow(
-                        color: selectedRole != nil ? .white.opacity(0.3) : .clear,
-                        radius: 20, x: 0, y: 10
+                        color: selectedRole != nil ? Color.upsideGreen.opacity(0.4) : .clear,
+                        radius: 18, x: 0, y: 10
                     )
                 }
                 .disabled(selectedRole == nil)

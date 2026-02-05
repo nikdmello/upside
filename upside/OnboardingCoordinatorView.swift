@@ -1,12 +1,13 @@
 import SwiftUI
 
 struct OnboardingCoordinatorView: View {
+    let showSplash: Bool
     @StateObject private var onboardingState = OnboardingState()
     
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color.black, Color(red: 0.05, green: 0.05, blue: 0.1)],
+                colors: [Color.black, Color(red: 0.02, green: 0.02, blue: 0.02)],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -16,6 +17,7 @@ struct OnboardingCoordinatorView: View {
                 switch onboardingState.currentStep {
                 case .welcome:
                     WelcomeView(
+                        showSplash: showSplash,
                         onSignUp: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 onboardingState.startSignUp()
@@ -63,7 +65,12 @@ struct OnboardingCoordinatorView: View {
                 case .roleSelection:
                     RoleSelectorView(onRoleSelected: { role in
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            onboardingState.selectRole(role)
+                            onboardingState.selectedRole = role
+                            if role == .creator {
+                                onboardingState.currentStep = .creatorProfile
+                            } else {
+                                onboardingState.currentStep = .brandProfile
+                            }
                         }
                     })
                     
@@ -74,6 +81,10 @@ struct OnboardingCoordinatorView: View {
                         onAuthComplete: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 onboardingState.currentStep = .accountCreation
+                                
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    onboardingState.showNotificationSheet = true
+                                }
                             }
                         }
                     )
@@ -84,13 +95,7 @@ struct OnboardingCoordinatorView: View {
                         
                         ZStack {
                             Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.green, Color.blue],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
+                                .fill(Color.upsideGreen)
                                 .frame(width: 80, height: 80)
                             
                             Image(systemName: "checkmark")
@@ -100,25 +105,38 @@ struct OnboardingCoordinatorView: View {
                         
                         Spacer()
                     }
-                    .sheet(isPresented: $onboardingState.showNotificationSheet) {
-                        NotificationPermissionSheet(
-                            isPresented: $onboardingState.showNotificationSheet,
-                            userRole: onboardingState.selectedRole ?? .creator,
-                            onComplete: {
-                                onboardingState.completeNotifications()
+                    
+                case .creatorProfile:
+                    CreatorProfileSetupFlow {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            onboardingState.currentStep = .confirmation
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                onboardingState.showNotificationSheet = true
                             }
-                        )
+                        }
                     }
                     
-                default:
-                    VStack {
-                        Text("Coming Soon")
-                            .font(.largeTitle)
-                            .foregroundColor(.white)
-                        Text("Step: \(String(describing: onboardingState.currentStep))")
-                            .font(.headline)
-                            .foregroundColor(.white.opacity(0.7))
+                case .brandProfile:
+                    BrandProfileSetupFlow {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            onboardingState.currentStep = .confirmation
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                                onboardingState.showNotificationSheet = true
+                            }
+                        }
                     }
+                    
+                case .confirmation:
+                    HomeView(userRole: onboardingState.selectedRole ?? .creator)
+                        .sheet(isPresented: $onboardingState.showNotificationSheet) {
+                            NotificationPermissionSheet(
+                                isPresented: $onboardingState.showNotificationSheet,
+                                userRole: onboardingState.selectedRole ?? .creator,
+                                onComplete: {
+                                    onboardingState.completeNotifications()
+                                }
+                            )
+                        }
                 }
             }
             .transition(.asymmetric(
@@ -155,5 +173,5 @@ struct OnboardingCoordinatorView: View {
 }
 
 #Preview {
-    OnboardingCoordinatorView()
+    OnboardingCoordinatorView(showSplash: false)
 }

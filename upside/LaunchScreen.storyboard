@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21507" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" launchScreen="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="LaunchViewController">
+    <device id="retina6_1" orientation="portrait" appearance="light"/>
+    <scenes>
+        <!--View Controller-->
+        <scene sceneID="launch-screen">
+            <objects>
+                <viewController id="LaunchViewController" sceneMemberID="viewController">
+                    <view key="view" contentMode="scaleToFill" id="LaunchView">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <subviews>
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="UpsideWordmark" translatesAutoresizingMaskIntoConstraints="NO" id="LaunchLogoImage">
+                                <rect key="frame" x="107" y="408" width="200" height="80"/>
+                            </imageView>
+                        </subviews>
+                        <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="LaunchLogoImage" firstAttribute="centerX" secondItem="LaunchView" secondAttribute="centerX" id="centerX"/>
+                            <constraint firstItem="LaunchLogoImage" firstAttribute="centerY" secondItem="LaunchView" secondAttribute="centerY" id="centerY"/>
+                            <constraint firstItem="LaunchLogoImage" firstAttribute="width" constant="220" id="width"/>
+                            <constraint firstItem="LaunchLogoImage" firstAttribute="height" constant="90" id="height"/>
+                        </constraints>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="FirstResponder" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="UpsideWordmark" width="200" height="80"/>
+    </resources>
+</document>

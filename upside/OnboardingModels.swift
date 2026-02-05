@@ -28,11 +28,7 @@ enum OnboardingStep: CaseIterable {
     case auth
     case accountCreation
     case creatorProfile
-    case creatorLicense
-    case creatorRates
     case brandProfile
-    case brandCampaign
-    case brandGoals
     case confirmation
 }
 

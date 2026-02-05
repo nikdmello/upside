@@ -37,22 +37,22 @@ struct NotificationPermissionSheet: View {
             return [
                 NotificationModel(
                     title: "New Creator Match",
-                    body: "Joshua (@jxshdxniells) matched with your LGBTQ campaign.",
+                    body: "Joshua (@jxshdxniells) matched with your marketing campaign.",
                     time: "now"
                 ),
                 NotificationModel(
                     title: "Campaign Update",
-                    body: "Your summer collection campaign received 5 new applications today.",
+                    body: "Your summer collection campaign received 9 new applications today.",
                     time: "now"
                 ),
                 NotificationModel(
                     title: "Performance Alert",
-                    body: "Your active campaigns are performing 23% above industry average.",
+                    body: "Your active campaigns are performing 53% above industry average.",
                     time: "now"
                 ),
                 NotificationModel(
                     title: "Payment Reminder",
-                    body: "Invoice for collaboration with @mikefitness is ready for approval.",
+                    body: "Invoice for collaboration with @abdulmurad_ is ready for approval.",
                     time: "now"
                 )
             ]
@@ -78,12 +78,8 @@ struct NotificationPermissionSheet: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.05, green: 0.05, blue: 0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Color.black
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 RoundedRectangle(cornerRadius: 3)
@@ -143,16 +139,10 @@ struct NotificationPermissionSheet: View {
                     }) {
                         Text("Enable Notifications")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.black)
+                            .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.white, Color.gray.opacity(0.9)],
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
+                            .background(Color.upsideGreen)
                             .cornerRadius(28)
                             .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
                     }
@@ -204,19 +194,12 @@ struct NotificationCard: View {
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
-                Circle()
-                    .fill(
-                        LinearGradient(
-                            colors: [Color.purple, Color.blue],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                Image("UpsideAppIcon")
+                    .resizable()
+                    .scaledToFill()
                     .frame(width: 40, height: 40)
-                
-                Text("U")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.white)
+                    .background(Color.black.opacity(0.2))
+                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
             
             VStack(alignment: .leading, spacing: 2) {
@@ -265,7 +248,7 @@ struct BenefitRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
-                .foregroundColor(.purple)
+                .foregroundColor(Color.upsideGreen)
                 .frame(width: 20)
             
             Text(text)
