@@ -37,22 +37,22 @@ struct NotificationPermissionSheet: View {
             return [
                 NotificationModel(
                     title: "New Creator Match",
-                    body: "Joshua (@jxshdxniells) matched with your LGBTQ campaign.",
+                    body: "Joshua (@jxshdxniells) matched with your marketing campaign.",
                     time: "now"
                 ),
                 NotificationModel(
                     title: "Campaign Update",
-                    body: "Your summer collection campaign received 5 new applications today.",
+                    body: "Your summer collection campaign received 9 new applications today.",
                     time: "now"
                 ),
                 NotificationModel(
                     title: "Performance Alert",
-                    body: "Your active campaigns are performing 23% above industry average.",
+                    body: "Your active campaigns are performing 53% above industry average.",
                     time: "now"
                 ),
                 NotificationModel(
                     title: "Payment Reminder",
-                    body: "Invoice for collaboration with @mikefitness is ready for approval.",
+                    body: "Invoice for collaboration with @abdulmurad_ is ready for approval.",
                     time: "now"
                 )
             ]
