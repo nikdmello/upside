@@ -11,12 +11,8 @@ struct AuthView: View {
     
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.05, green: 0.05, blue: 0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            Color.black
+                .ignoresSafeArea()
             
             VStack(spacing: 0) {
                 VStack(spacing: 20) {
@@ -86,8 +82,8 @@ struct AuthView: View {
                     AuthButton(
                         title: "Continue with Email",
                         icon: "envelope.fill",
-                        backgroundColor: Color.white.opacity(0.1),
-                        foregroundColor: .white,
+                        backgroundColor: Color.upsideGreen,
+                        foregroundColor: .black,
                         onTap: {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                             impactFeedback.impactOccurred()
@@ -102,8 +98,8 @@ struct AuthView: View {
                     AuthButton(
                         title: "Demo Login",
                         icon: "hammer.fill",
-                        backgroundColor: Color.purple.opacity(0.2),
-                        foregroundColor: .purple,
+                        backgroundColor: Color.upsideGreen.opacity(0.2),
+                        foregroundColor: Color.upsideGreen,
                         onTap: {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                             impactFeedback.impactOccurred()
