@@ -95,10 +95,10 @@ struct WelcomeView: View {
                     .padding(.bottom, 50)
                 }
 
-                UpsideLogo()
-                    .frame(height: BrandLogo.height)
+                BrandLogoView()
                     .scaleEffect(BrandLogo.scale)
                     .position(x: geo.size.width / 2, y: topY)
+                    .opacity(showSplash ? 0 : 1)
             }
         }
         .onAppear {
