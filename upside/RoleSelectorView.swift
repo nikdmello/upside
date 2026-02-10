@@ -4,12 +4,12 @@ struct RoleSelectorView: View {
     @State private var selectedRole: UserRole?
     @State private var isAnimated = false
     let onRoleSelected: (UserRole) -> Void
-    
+
     var body: some View {
         ZStack {
             Color.black
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 VStack(spacing: 20) {
                     Text("What are you\nhere to do?")
@@ -21,32 +21,32 @@ struct RoleSelectorView: View {
                         .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
                 }
                 .padding(.top, 80)
-                
+
                 Spacer()
-                
+
                 VStack(spacing: 20) {
                     RoleCard(
                         role: .creator,
                         isSelected: selectedRole == .creator,
                         gradient: [Color.upsideGreen, Color.upsideGreen.opacity(0.7)],
-                        onTap: { 
+                        onTap: {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                             impactFeedback.impactOccurred()
-                            selectedRole = .creator 
+                            selectedRole = .creator
                         }
                     )
                     .opacity(isAnimated ? 1 : 0)
                     .offset(x: isAnimated ? 0 : -50)
                     .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
-                    
+
                     RoleCard(
                         role: .brand,
                         isSelected: selectedRole == .brand,
                         gradient: [Color.upsideGreen, Color.upsideGreen.opacity(0.7)],
-                        onTap: { 
+                        onTap: {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                             impactFeedback.impactOccurred()
-                            selectedRole = .brand 
+                            selectedRole = .brand
                         }
                     )
                     .opacity(isAnimated ? 1 : 0)
@@ -54,9 +54,9 @@ struct RoleSelectorView: View {
                     .animation(.easeOut(duration: 0.6).delay(0.6), value: isAnimated)
                 }
                 .padding(.horizontal, 24)
-                
+
                 Spacer()
-                
+
                 Button(action: {
                     guard let role = selectedRole else { return }
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -66,7 +66,7 @@ struct RoleSelectorView: View {
                     HStack {
                         Text("Continue")
                             .font(.system(size: 18, weight: .semibold))
-                        
+
                         Image(systemName: "arrow.right")
                             .font(.system(size: 16, weight: .semibold))
                     }
@@ -103,7 +103,7 @@ struct RoleCard: View {
     let isSelected: Bool
     let gradient: [Color]
     let onTap: () -> Void
-    
+
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 20) {
@@ -117,18 +117,18 @@ struct RoleCard: View {
                             )
                         )
                         .frame(width: 60, height: 60)
-                    
+
                     Image(systemName: role == .creator ? "person.fill" : "building.2.fill")
                         .font(.title2)
                         .foregroundColor(.white)
                 }
-                
+
                 VStack(alignment: .leading, spacing: 6) {
                     Text("I'm a \(role.displayName)")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.white)
-                    
-                    Text(role == .creator ? 
+
+                    Text(role == .creator ?
                          "I make content and work with brands" :
                          "I want to hire creators and run campaigns"
                     )
@@ -136,19 +136,19 @@ struct RoleCard: View {
                     .foregroundColor(.white.opacity(0.7))
                     .multilineTextAlignment(.leading)
                 }
-                
+
                 Spacer()
-                
+
                 ZStack {
                     Circle()
                         .fill(isSelected ? Color.white : Color.clear)
                         .frame(width: 24, height: 24)
-                    
+
                     Circle()
                         .stroke(Color.white.opacity(0.5), lineWidth: 2)
                         .frame(width: 24, height: 24)
                         .opacity(isSelected ? 0 : 1)
-                    
+
                     Image(systemName: "checkmark")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundColor(.black)

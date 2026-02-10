@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SplashView: View {
     @Binding var show: Bool
-    @State private var animateLogo = false
+    @State private var logoAtTop = false
 
     var body: some View {
         GeometryReader { geo in
@@ -13,17 +13,13 @@ struct SplashView: View {
                 Color.black
                     .ignoresSafeArea()
 
-                UpsideLogo()
-                    .frame(height: BrandLogo.height)
-                    .scaleEffect(BrandLogo.scale)
-                    .position(x: geo.size.width / 2, y: animateLogo ? topY : centerY)
-                    .animation(.easeInOut(duration: 0.7), value: animateLogo)
+                BrandLogoView()
+                    .position(x: geo.size.width / 2, y: logoAtTop ? topY : centerY)
+                    .animation(.easeInOut(duration: 0.7), value: logoAtTop)
             }
             .onAppear {
-                animateLogo = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) {
-                    show = false
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { logoAtTop = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) { show = false }
             }
         }
     }

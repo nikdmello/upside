@@ -3,7 +3,7 @@ import SwiftUI
 struct OnboardingCoordinatorView: View {
     let showSplash: Bool
     @StateObject private var onboardingState = OnboardingState()
-    
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -12,7 +12,7 @@ struct OnboardingCoordinatorView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
+
             Group {
                 switch onboardingState.currentStep {
                 case .welcome:
@@ -29,7 +29,7 @@ struct OnboardingCoordinatorView: View {
                             }
                         }
                     )
-                    
+
                 case .login:
                     AuthView(
                         userRole: nil,
@@ -38,14 +38,24 @@ struct OnboardingCoordinatorView: View {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 onboardingState.selectedRole = .creator
                                 onboardingState.currentStep = .accountCreation
-                                
+
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    onboardingState.showNotificationSheet = true
+                                }
+                            }
+                        },
+                        onDemoLogin: { role in
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onboardingState.selectedRole = role
+                                onboardingState.currentStep = .confirmation
+
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                     onboardingState.showNotificationSheet = true
                                 }
                             }
                         }
                     )
-                    
+
                 case .signUp:
                     RoleSelectorView(onRoleSelected: { role in
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -61,7 +71,7 @@ struct OnboardingCoordinatorView: View {
                             }
                         )
                     }
-                    
+
                 case .roleSelection:
                     RoleSelectorView(onRoleSelected: { role in
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -73,7 +83,7 @@ struct OnboardingCoordinatorView: View {
                             }
                         }
                     })
-                    
+
                 case .auth:
                     AuthView(
                         userRole: onboardingState.selectedRole,
@@ -81,31 +91,41 @@ struct OnboardingCoordinatorView: View {
                         onAuthComplete: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 onboardingState.currentStep = .accountCreation
-                                
+
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    onboardingState.showNotificationSheet = true
+                                }
+                            }
+                        },
+                        onDemoLogin: { role in
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                onboardingState.selectedRole = role
+                                onboardingState.currentStep = .confirmation
+
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                     onboardingState.showNotificationSheet = true
                                 }
                             }
                         }
                     )
-                    
+
                 case .accountCreation:
                     VStack(spacing: 0) {
                         Spacer()
-                        
+
                         ZStack {
                             Circle()
                                 .fill(Color.upsideGreen)
                                 .frame(width: 80, height: 80)
-                            
+
                             Image(systemName: "checkmark")
                                 .font(.system(size: 30, weight: .bold))
                                 .foregroundColor(.white)
                         }
-                        
+
                         Spacer()
                     }
-                    
+
                 case .creatorProfile:
                     CreatorProfileSetupFlow {
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -115,7 +135,7 @@ struct OnboardingCoordinatorView: View {
                             }
                         }
                     }
-                    
+
                 case .brandProfile:
                     BrandProfileSetupFlow {
                         withAnimation(.easeInOut(duration: 0.3)) {
@@ -125,7 +145,7 @@ struct OnboardingCoordinatorView: View {
                             }
                         }
                     }
-                    
+
                 case .confirmation:
                     HomeView(userRole: onboardingState.selectedRole ?? .creator)
                         .sheet(isPresented: $onboardingState.showNotificationSheet) {
@@ -143,7 +163,7 @@ struct OnboardingCoordinatorView: View {
                 insertion: .move(edge: .trailing).combined(with: .opacity),
                 removal: .move(edge: .leading).combined(with: .opacity)
             ))
-            
+
             if onboardingState.previousStep != nil {
                 VStack {
                     HStack {
@@ -159,12 +179,12 @@ struct OnboardingCoordinatorView: View {
                                 .foregroundColor(.white.opacity(0.4))
                                 .frame(width: 44, height: 44)
                         }
-                        
+
                         Spacer()
                     }
                     .padding(.horizontal, 32)
                     .padding(.top, 80)
-                    
+
                     Spacer()
                 }
             }

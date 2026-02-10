@@ -3,7 +3,7 @@ import SwiftUI
 struct BrandProfileSetupFlow: View {
     @StateObject private var profileState = BrandProfileState()
     let onComplete: () -> Void
-    
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -12,7 +12,7 @@ struct BrandProfileSetupFlow: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 ProfileProgressBar(
                     currentStep: profileState.currentStep.stepNumber,
@@ -20,7 +20,7 @@ struct BrandProfileSetupFlow: View {
                 )
                 .padding(.horizontal, 32)
                 .padding(.top, 20)
-                
+
                 Group {
                     switch profileState.currentStep {
                     case .company:
@@ -37,9 +37,9 @@ struct BrandProfileSetupFlow: View {
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
-                
+
                 Spacer()
-                
+
                 if profileState.currentStep != .finish {
                     ProfileNavigationButtons(
                         canGoBack: profileState.canGoBack,

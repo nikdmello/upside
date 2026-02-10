@@ -4,7 +4,7 @@ import SwiftUI
 struct ProfileProgressBar: View {
     let currentStep: Int
     let totalSteps: Int
-    
+
     var body: some View {
         VStack(spacing: 12) {
             HStack {
@@ -13,14 +13,14 @@ struct ProfileProgressBar: View {
                     .foregroundColor(.white.opacity(0.7))
                 Spacer()
             }
-            
+
             GeometryReader { geometry in
                 ZStack(alignment: .leading) {
                     // Background track
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.white.opacity(0.2))
                         .frame(height: 4)
-                    
+
                     // Progress fill
                     RoundedRectangle(cornerRadius: 2)
                         .fill(Color.upsideGreen)
@@ -39,7 +39,7 @@ struct ProfileNavigationButtons: View {
     let canGoNext: Bool
     let onBack: () -> Void
     let onNext: () -> Void
-    
+
     var body: some View {
         HStack(spacing: 16) {
             if canGoBack {
@@ -61,7 +61,7 @@ struct ProfileNavigationButtons: View {
                         )
                 }
             }
-            
+
             Button(action: {
                 let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                 impactFeedback.impactOccurred()
@@ -94,13 +94,13 @@ struct ProfileInputField: View {
     let placeholder: String
     @Binding var text: String
     var keyboardType: UIKeyboardType = .default
-    
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(.white)
-            
+
             TextField(placeholder, text: $text)
                 .font(.system(size: 18))
                 .foregroundColor(.white)

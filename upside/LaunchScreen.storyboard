@@ -9,7 +9,7 @@
                     <view key="view" contentMode="scaleToFill" id="LaunchView">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <subviews>
-                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="UpsideWordmark" translatesAutoresizingMaskIntoConstraints="NO" id="LaunchLogoImage">
+                            <imageView userInteractionEnabled="NO" contentMode="scaleAspectFit" image="UpsideAppIcon" translatesAutoresizingMaskIntoConstraints="NO" id="LaunchLogoImage">
                                 <rect key="frame" x="107" y="408" width="200" height="80"/>
                             </imageView>
                         </subviews>
@@ -17,8 +17,8 @@
                         <constraints>
                             <constraint firstItem="LaunchLogoImage" firstAttribute="centerX" secondItem="LaunchView" secondAttribute="centerX" id="centerX"/>
                             <constraint firstItem="LaunchLogoImage" firstAttribute="centerY" secondItem="LaunchView" secondAttribute="centerY" id="centerY"/>
-                            <constraint firstItem="LaunchLogoImage" firstAttribute="width" constant="220" id="width"/>
-                            <constraint firstItem="LaunchLogoImage" firstAttribute="height" constant="90" id="height"/>
+                            <constraint firstItem="LaunchLogoImage" firstAttribute="width" constant="264" id="width"/>
+                            <constraint firstItem="LaunchLogoImage" firstAttribute="height" constant="108" id="height"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -27,6 +27,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="UpsideWordmark" width="200" height="80"/>
+        <image name="UpsideAppIcon" width="240" height="96"/>
     </resources>
 </document>

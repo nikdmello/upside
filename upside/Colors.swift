@@ -1,14 +1,16 @@
 import SwiftUI
 
 extension Color {
-    static let upsideGreen = Color(red: 0.165, green: 0.667, blue: 0.455)
+    static let upsideGreen = Color(red: 0.698, green: 0.957, blue: 0.329)
 }
 
 struct UpsideLogo: View {
+    var height: CGFloat = 90
+
     var body: some View {
-        Image("UpsideWordmark")
+        Image("UpsideAppIcon")
             .resizable()
             .scaledToFit()
-            .frame(height: 40)
+            .frame(height: height)
     }
 }

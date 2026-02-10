@@ -21,7 +21,7 @@ enum CreatorProfileStep: CaseIterable {
     case audience
     case rate
     case finish
-    
+
     var title: String {
         switch self {
         case .name: return "What's your name?"
@@ -30,11 +30,11 @@ enum CreatorProfileStep: CaseIterable {
         case .finish: return "You're all set!"
         }
     }
-    
+
     var stepNumber: Int {
         return CreatorProfileStep.allCases.firstIndex(of: self)! + 1
     }
-    
+
     var totalSteps: Int {
         return CreatorProfileStep.allCases.count
     }
@@ -44,7 +44,7 @@ class CreatorProfileState: ObservableObject {
     @Published var profile = CreatorProfile()
     @Published var currentStep: CreatorProfileStep = .name
     @Published var isComplete = false
-    
+
     var canGoNext: Bool {
         switch currentStep {
         case .name:
@@ -57,14 +57,14 @@ class CreatorProfileState: ObservableObject {
             return false
         }
     }
-    
+
     var canGoBack: Bool {
         return currentStep != .name && currentStep != .finish
     }
-    
+
     func nextStep() {
         guard canGoNext else { return }
-        
+
         switch currentStep {
         case .name:
             currentStep = .audience
@@ -77,10 +77,10 @@ class CreatorProfileState: ObservableObject {
             break
         }
     }
-    
+
     func previousStep() {
         guard canGoBack else { return }
-        
+
         switch currentStep {
         case .audience:
             currentStep = .name
@@ -108,7 +108,7 @@ enum BrandProfileStep: CaseIterable {
     case budget
     case goals
     case finish
-    
+
     var title: String {
         switch self {
         case .company: return "What's your company?"
@@ -117,11 +117,11 @@ enum BrandProfileStep: CaseIterable {
         case .finish: return "Ready to launch!"
         }
     }
-    
+
     var stepNumber: Int {
         return BrandProfileStep.allCases.firstIndex(of: self)! + 1
     }
-    
+
     var totalSteps: Int {
         return BrandProfileStep.allCases.count
     }
@@ -131,7 +131,7 @@ class BrandProfileState: ObservableObject {
     @Published var profile = BrandProfile()
     @Published var currentStep: BrandProfileStep = .company
     @Published var isComplete = false
-    
+
     var canGoNext: Bool {
         switch currentStep {
         case .company:
@@ -144,14 +144,14 @@ class BrandProfileState: ObservableObject {
             return false
         }
     }
-    
+
     var canGoBack: Bool {
         return currentStep != .company && currentStep != .finish
     }
-    
+
     func nextStep() {
         guard canGoNext else { return }
-        
+
         switch currentStep {
         case .company:
             currentStep = .budget
@@ -164,10 +164,10 @@ class BrandProfileState: ObservableObject {
             break
         }
     }
-    
+
     func previousStep() {
         guard canGoBack else { return }
-        
+
         switch currentStep {
         case .budget:
             currentStep = .company

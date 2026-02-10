@@ -7,7 +7,7 @@ struct NotificationPermissionSheet: View {
     @State private var isAnimating = false
     let userRole: UserRole
     let onComplete: () -> Void
-    
+
     var notifications: [NotificationModel] {
         switch userRole {
         case .creator:
@@ -58,7 +58,7 @@ struct NotificationPermissionSheet: View {
             ]
         }
     }
-    
+
     var benefits: [(icon: String, text: String)] {
         switch userRole {
         case .creator:
@@ -75,32 +75,32 @@ struct NotificationPermissionSheet: View {
             ]
         }
     }
-    
+
     var body: some View {
         ZStack {
             Color.black
                 .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(Color.white.opacity(0.3))
                     .frame(width: 40, height: 6)
                     .padding(.top, 12)
-                
+
                 ScrollView {
                     VStack(spacing: 32) {
                         VStack(spacing: 16) {
                             Text("Stay Updated")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
-                            
+
                             Text("Get notified about important updates on your matches")
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.white.opacity(0.7))
                                 .multilineTextAlignment(.center)
                         }
                         .padding(.top, 24)
-                        
+
                         VStack(spacing: 16) {
                             ZStack {
                                 NotificationCard(notification: notifications[currentNotificationIndex])
@@ -116,7 +116,7 @@ struct NotificationPermissionSheet: View {
                                 startNotificationCarousel()
                             }
                         }
-                        
+
                         VStack(spacing: 12) {
                             ForEach(Array(benefits.enumerated()), id: \.offset) { _, benefit in
                                 BenefitRow(
@@ -126,11 +126,11 @@ struct NotificationPermissionSheet: View {
                             }
                         }
                         .padding(.horizontal, 24)
-                        
+
                         Spacer(minLength: 40)
                     }
                 }
-                
+
                 VStack(spacing: 16) {
                     Button(action: {
                         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -146,7 +146,7 @@ struct NotificationPermissionSheet: View {
                             .cornerRadius(28)
                             .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
                     }
-                    
+
                     Button(action: {
                         let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                         impactFeedback.impactOccurred()
@@ -165,7 +165,7 @@ struct NotificationPermissionSheet: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.hidden)
     }
-    
+
     private func startNotificationCarousel() {
         Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
             withAnimation(.easeInOut(duration: 0.6)) {
@@ -173,7 +173,7 @@ struct NotificationPermissionSheet: View {
             }
         }
     }
-    
+
     private func requestNotificationPermission() {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .badge, .sound]) { granted, error in
             DispatchQueue.main.async {
@@ -190,7 +190,7 @@ struct NotificationPermissionSheet: View {
 
 struct NotificationCard: View {
     let notification: NotificationModel
-    
+
     var body: some View {
         HStack(spacing: 12) {
             ZStack {
@@ -201,30 +201,30 @@ struct NotificationCard: View {
                     .background(Color.black.opacity(0.2))
                     .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
-            
+
             VStack(alignment: .leading, spacing: 2) {
                 HStack {
                     Text("Upside")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.white)
-                    
+
                     Spacer()
-                    
+
                     Text(notification.time)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                 }
-                
+
                 Text(notification.title)
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(.white.opacity(0.9))
-                
+
                 Text(notification.body)
                     .font(.system(size: 12, weight: .regular))
                     .foregroundColor(.white.opacity(0.7))
                     .lineLimit(2)
             }
-            
+
             Spacer()
         }
         .padding(16)
@@ -243,18 +243,18 @@ struct NotificationCard: View {
 struct BenefitRow: View {
     let icon: String
     let text: String
-    
+
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(Color.upsideGreen)
                 .frame(width: 20)
-            
+
             Text(text)
                 .font(.system(size: 19, weight: .medium))
                 .foregroundColor(.white.opacity(0.8))
-            
+
             Spacer()
         }
     }

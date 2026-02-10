@@ -6,17 +6,17 @@ class AuthManager: NSObject, ObservableObject {
     @Published var isAuthenticated = false
     @Published var user: User?
     @Published var authError: String?
-    
+
     func signInWithApple() {
         let request = ASAuthorizationAppleIDProvider().createRequest()
         request.requestedScopes = [.fullName, .email]
-        
+
         let authorizationController = ASAuthorizationController(authorizationRequests: [request])
         authorizationController.delegate = self
         authorizationController.presentationContextProvider = self
         authorizationController.performRequests()
     }
-    
+
     func signInWithEmail(_ email: String, password: String) {
         // TODO: Implement email/password auth with your backend
         // For now, simulate success
@@ -25,7 +25,7 @@ class AuthManager: NSObject, ObservableObject {
             self.isAuthenticated = true
         }
     }
-    
+
     func signInWithGoogle() {
         // TODO: Implement Google Sign In SDK
         // For now, simulate success
@@ -34,12 +34,12 @@ class AuthManager: NSObject, ObservableObject {
             self.isAuthenticated = true
         }
     }
-    
+
     func signInDemo() {
         user = User(id: "demo", email: "demo@upside.com", name: "Demo User")
         isAuthenticated = true
     }
-    
+
     func signOut() {
         user = nil
         isAuthenticated = false
@@ -53,14 +53,14 @@ extension AuthManager: ASAuthorizationControllerDelegate {
             let email = appleIDCredential.email ?? ""
             let fullName = appleIDCredential.fullName
             let name = [fullName?.givenName, fullName?.familyName].compactMap { $0 }.joined(separator: " ")
-            
+
             DispatchQueue.main.async {
                 self.user = User(id: userID, email: email, name: name.isEmpty ? "Apple User" : name)
                 self.isAuthenticated = true
             }
         }
     }
-    
+
     func authorizationController(controller: ASAuthorizationController, didCompleteWithError error: Error) {
         DispatchQueue.main.async {
             self.authError = error.localizedDescription
