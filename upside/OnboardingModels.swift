@@ -4,14 +4,14 @@ import Combine
 enum UserRole: String, CaseIterable {
     case creator = "creator"
     case brand = "brand"
-    
+
     var displayName: String {
         switch self {
         case .creator: return "Creator"
         case .brand: return "Brand"
         }
     }
-    
+
     var description: String {
         switch self {
         case .creator: return "Licensed influencer looking for brand partnerships"
@@ -38,7 +38,7 @@ class OnboardingState: ObservableObject {
     @Published var isComplete: Bool = false
     @Published var showNotificationSheet: Bool = false
     @Published var isLoginFlow: Bool = false
-    
+
     var previousStep: OnboardingStep? {
         switch currentStep {
         case .roleSelection: return .welcome
@@ -48,40 +48,40 @@ class OnboardingState: ObservableObject {
         default: return nil
         }
     }
-    
+
     func moveToNext() {
         guard let currentIndex = OnboardingStep.allCases.firstIndex(of: currentStep),
               currentIndex < OnboardingStep.allCases.count - 1 else { return }
-        
+
         currentStep = OnboardingStep.allCases[currentIndex + 1]
     }
-    
+
     func selectRole(_ role: UserRole) {
         selectedRole = role
         currentStep = .accountCreation
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             self.showNotificationSheet = true
         }
     }
-    
+
     func completeNotifications() {
         showNotificationSheet = false
     }
-    
+
     func startSignUp() {
         currentStep = .roleSelection
     }
-    
+
     func startLogin() {
         isLoginFlow = true
         currentStep = .login
     }
-    
+
     func completeLoginNotifications() {
         showNotificationSheet = false
     }
-    
+
     func goBack() {
         switch currentStep {
         case .roleSelection:

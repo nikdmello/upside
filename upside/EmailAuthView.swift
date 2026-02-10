@@ -7,7 +7,7 @@ struct EmailAuthView: View {
     @State private var isLoading = false
     @State private var isAnimated = false
     let onAuthComplete: () -> Void
-    
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -16,7 +16,7 @@ struct EmailAuthView: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 VStack(spacing: 20) {
                     Text("Sign in with\nemail")
@@ -28,23 +28,23 @@ struct EmailAuthView: View {
                         .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
                 }
                 .padding(.top, 80)
-                
+
                 Spacer()
-                
+
                 VStack(spacing: 20) {
                     VStack(spacing: 16) {
                         TextField("Email", text: $email)
                             .textFieldStyle(AuthTextFieldStyle())
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
-                        
+
                         SecureField("Password", text: $password)
                             .textFieldStyle(AuthTextFieldStyle())
                     }
                     .opacity(isAnimated ? 1 : 0)
                     .offset(y: isAnimated ? 0 : 20)
                     .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
-                    
+
                     Button(action: {
                         let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                         impactFeedback.impactOccurred()
@@ -91,11 +91,11 @@ struct EmailAuthView: View {
             }
         }
     }
-    
+
     private func signIn() {
         isLoading = true
         authManager.signInWithEmail(email, password: password)
-        
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             isLoading = false
         }

@@ -3,11 +3,11 @@ import SwiftUI
 struct CreatorNameView: View {
     @ObservedObject var profileState: CreatorProfileState
     @State private var isAnimated = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            
+
             VStack(spacing: 48) {
                 VStack(spacing: 12) {
                     Text("What's your name?")
@@ -17,7 +17,7 @@ struct CreatorNameView: View {
                         .opacity(isAnimated ? 1 : 0)
                         .offset(y: isAnimated ? 0 : 20)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimated)
-                    
+
                     Text("We'll use this to personalize your experience")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
@@ -25,7 +25,7 @@ struct CreatorNameView: View {
                         .opacity(isAnimated ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isAnimated)
                 }
-                
+
                 VStack(spacing: 12) {
                     TextField("Enter your full name", text: $profileState.profile.fullName)
                         .font(.system(size: 20, weight: .medium))
@@ -33,11 +33,11 @@ struct CreatorNameView: View {
                         .padding(.horizontal, 0)
                         .padding(.vertical, 16)
                         .background(Color.clear)
-                    
+
                     Rectangle()
                         .fill(
-                            profileState.profile.fullName.isEmpty ? 
-                            Color.white.opacity(0.2) : 
+                            profileState.profile.fullName.isEmpty ?
+                            Color.white.opacity(0.2) :
                             Color.upsideGreen
                         )
                         .frame(height: 2)
@@ -48,7 +48,7 @@ struct CreatorNameView: View {
                 .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: isAnimated)
             }
             .padding(.horizontal, 40)
-            
+
             Spacer()
         }
         .background(Color.black)
@@ -61,16 +61,16 @@ struct CreatorNameView: View {
 struct CreatorAudienceView: View {
     @ObservedObject var profileState: CreatorProfileState
     @State private var isAnimated = false
-    
+
     private let audienceOptions = [
-        "1K - 10K", "10K - 50K", "50K - 100K", 
+        "1K - 10K", "10K - 50K", "50K - 100K",
         "100K - 500K", "500K - 1M", "1M+"
     ]
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            
+
             VStack(spacing: 48) {
                 VStack(spacing: 12) {
                     Text("How big is your audience?")
@@ -80,7 +80,7 @@ struct CreatorAudienceView: View {
                         .opacity(isAnimated ? 1 : 0)
                         .offset(y: isAnimated ? 0 : 20)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimated)
-                    
+
                     Text("This helps brands find the right match")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
@@ -88,7 +88,7 @@ struct CreatorAudienceView: View {
                         .opacity(isAnimated ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isAnimated)
                 }
-                
+
                 VStack(spacing: 12) {
                     ForEach(Array(audienceOptions.enumerated()), id: \.offset) { index, option in
                         Button(action: {
@@ -100,9 +100,9 @@ struct CreatorAudienceView: View {
                                 Text(option)
                                     .font(.system(size: 18, weight: .semibold))
                                     .foregroundColor(.white)
-                                
+
                                 Spacer()
-                                
+
                                 if profileState.profile.followerCount == option {
                                     Image(systemName: "checkmark.circle.fill")
                                         .font(.system(size: 20))
@@ -132,7 +132,7 @@ struct CreatorAudienceView: View {
                 }
             }
             .padding(.horizontal, 32)
-            
+
             Spacer()
         }
         .background(Color.black)
@@ -146,11 +146,11 @@ struct CreatorRateView: View {
     @ObservedObject var profileState: CreatorProfileState
     @State private var isAnimated = false
     @State private var sliderValue: Double = 500
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            
+
             VStack(spacing: 48) {
                 VStack(spacing: 12) {
                     Text("What's your rate?")
@@ -160,21 +160,21 @@ struct CreatorRateView: View {
                         .opacity(isAnimated ? 1 : 0)
                         .offset(y: isAnimated ? 0 : 20)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimated)
-                    
+
                     Text("Per Instagram post")
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.6))
                         .opacity(isAnimated ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isAnimated)
                 }
-                
+
                 VStack(spacing: 32) {
                     Text("$\(Int(sliderValue))")
                         .font(.system(size: 48, weight: .bold))
                         .foregroundColor(.white)
                         .opacity(isAnimated ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: isAnimated)
-                    
+
                     VStack(spacing: 16) {
                         Slider(value: $sliderValue, in: 50...2000, step: 50)
                             .accentColor(Color.upsideGreen)
@@ -183,14 +183,14 @@ struct CreatorRateView: View {
                                 let impactFeedback = UIImpactFeedbackGenerator(style: .light)
                                 impactFeedback.impactOccurred()
                             }
-                        
+
                         HStack {
                             Text("$50")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
-                            
+
                             Spacer()
-                            
+
                             Text("$2000")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
@@ -202,7 +202,7 @@ struct CreatorRateView: View {
                 }
             }
             .padding(.horizontal, 40)
-            
+
             Spacer()
         }
         .background(Color.black)
@@ -218,11 +218,11 @@ struct CreatorRateView: View {
 struct CreatorFinishView: View {
     let onComplete: () -> Void
     @State private var isAnimated = false
-    
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            
+
             VStack(spacing: 40) {
                 ZStack {
                     Circle()
@@ -230,12 +230,12 @@ struct CreatorFinishView: View {
                         .frame(width: 120, height: 120)
                         .scaleEffect(isAnimated ? 1.0 : 0.8)
                         .animation(.easeOut(duration: 0.8).delay(0.2), value: isAnimated)
-                    
+
                     Image(systemName: "checkmark")
                         .font(.system(size: 50, weight: .bold))
                         .foregroundColor(.white)
                 }
-                
+
                 VStack(spacing: 16) {
                     Text("You're all set!")
                         .font(.system(size: 36, weight: .bold))
@@ -244,7 +244,7 @@ struct CreatorFinishView: View {
                         .opacity(isAnimated ? 1 : 0)
                         .offset(y: isAnimated ? 0 : 20)
                         .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
-                    
+
                     Text("Start connecting with brands\nin the GCC")
                         .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.white.opacity(0.8))
@@ -253,7 +253,7 @@ struct CreatorFinishView: View {
                         .offset(y: isAnimated ? 0 : 20)
                         .animation(.easeOut(duration: 0.6).delay(0.6), value: isAnimated)
                 }
-                
+
                 Button(action: {
                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                     impactFeedback.impactOccurred()
@@ -273,7 +273,7 @@ struct CreatorFinishView: View {
                 .animation(.easeOut(duration: 0.6).delay(0.8), value: isAnimated)
             }
             .padding(.horizontal, 32)
-            
+
             Spacer()
         }
         .onAppear {

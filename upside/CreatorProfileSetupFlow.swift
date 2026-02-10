@@ -3,7 +3,7 @@ import SwiftUI
 struct CreatorProfileSetupFlow: View {
     @StateObject private var profileState = CreatorProfileState()
     let onComplete: () -> Void
-    
+
     var body: some View {
         ZStack {
             // Background gradient matching existing design
@@ -13,7 +13,7 @@ struct CreatorProfileSetupFlow: View {
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            
+
             VStack(spacing: 0) {
                 // Progress indicator
                 ProfileProgressBar(
@@ -22,7 +22,7 @@ struct CreatorProfileSetupFlow: View {
                 )
                 .padding(.horizontal, 32)
                 .padding(.top, 20)
-                
+
                 // Step content
                 Group {
                     switch profileState.currentStep {
@@ -40,9 +40,9 @@ struct CreatorProfileSetupFlow: View {
                     insertion: .move(edge: .trailing).combined(with: .opacity),
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
-                
+
                 Spacer()
-                
+
                 // Navigation buttons
                 if profileState.currentStep != .finish {
                     ProfileNavigationButtons(
