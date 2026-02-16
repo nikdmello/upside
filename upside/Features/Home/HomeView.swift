@@ -7,6 +7,8 @@ struct HomeView: View {
     @State private var isDragging = false
     @State private var draggingCardID: UUID?
     @State private var showChat = false
+    private let tossAnimation = Animation.interactiveSpring(response: 0.24, dampingFraction: 0.86, blendDuration: 0.12)
+    private let stackAnimation = Animation.interactiveSpring(response: 0.28, dampingFraction: 0.88, blendDuration: 0.1)
 
     init(userRole: UserRole) {
         self.userRole = userRole
@@ -95,22 +97,38 @@ struct HomeView: View {
                     card: card,
                     userRole: userRole,
                     cardWidth: cardWidth,
-                    cardHeight: cardHeight,
-                    showBadge: card.id == draggingCardID && isDragging,
-                    dragAction: dragAction
+                    cardHeight: cardHeight
                 )
                     .scaleEffect(stackScale(for: index, isTop: isTop))
                     .offset(y: stackOffset(for: index, isTop: isTop))
                     .opacity(stackOpacity(for: index, isTop: isTop))
-                    .shadow(color: .black.opacity(isTop ? 0.45 : 0.25), radius: isTop ? 18 : 10, x: 0, y: isTop ? 12 : 8)
+                    .shadow(
+                        color: .black.opacity(isTop ? (isDragging ? 0.28 : 0.42) : 0.18),
+                        radius: isTop ? (isDragging ? 11 : 16) : 8,
+                        x: 0,
+                        y: isTop ? (isDragging ? 7 : 10) : 6
+                    )
                     .offset(card.id == draggingCardID ? dragOffset : .zero)
-                    .rotationEffect(.degrees(card.id == draggingCardID && isDragging ? Double(dragOffset.width / 18) : 0))
-                    .zIndex(card.id == draggingCardID ? 10 : Double(topCards.count - index))
+                    .rotationEffect(.degrees(card.id == draggingCardID ? Double(dragOffset.width / 18) : 0))
+                    .zIndex(card.id == draggingCardID ? 100 : Double(topCards.count - index))
                     .gesture(isTop ? dragGesture(for: card.id) : nil)
+            }
+
+            if let topCardID = topCards.first?.id,
+               topCardID == draggingCardID,
+               isDragging,
+               let action = dragCueAction {
+                SwipeBadge(action: action)
+                    .padding(dragBadgePadding)
+                    .frame(width: cardWidth, height: cardHeight, alignment: dragBadgeAlignment)
+                    .offset(x: dragOffset.width, y: dragOffset.height)
+                    .rotationEffect(.degrees(Double(dragOffset.width / 18)))
+                    .zIndex(300)
+                    .allowsHitTesting(false)
             }
         }
         .frame(height: cardHeight)
-        .animation(.easeInOut(duration: 0.36), value: viewModel.currentCard?.id)
+        .animation(stackAnimation, value: viewModel.currentCard?.id)
     }
         .frame(height: 520)
     }
@@ -159,11 +177,48 @@ struct HomeView: View {
         .padding(.horizontal, 32)
     }
 
-    private var dragAction: SwipeAction? {
-        if dragOffset.width > 120 { return .match }
-        if dragOffset.width < -120 { return .skip }
-        if dragOffset.height < -120 { return .save }
+    private var dragCueAction: SwipeAction? {
+        let x = dragOffset.width
+        let y = dragOffset.height
+        let threshold: CGFloat = 8
+
+        guard abs(x) > threshold || abs(y) > threshold else {
+            return nil
+        }
+
+        if abs(x) >= abs(y) {
+            return x > 0 ? .match : .skip
+        }
+        if y < 0 {
+            return .save
+        }
         return nil
+    }
+
+    private var dragBadgeAlignment: Alignment {
+        switch dragCueAction {
+        case .match:
+            return .topLeading
+        case .skip:
+            return .topTrailing
+        case .save:
+            return .top
+        case .none:
+            return .top
+        }
+    }
+
+    private var dragBadgePadding: EdgeInsets {
+        switch dragCueAction {
+        case .match:
+            return EdgeInsets(top: 10, leading: 10, bottom: 0, trailing: 0)
+        case .skip:
+            return EdgeInsets(top: 10, leading: 0, bottom: 0, trailing: 10)
+        case .save:
+            return EdgeInsets(top: 10, leading: 0, bottom: 0, trailing: 0)
+        case .none:
+            return EdgeInsets()
+        }
     }
 
     private func dragGesture(for cardID: UUID) -> some Gesture {
@@ -175,23 +230,29 @@ struct HomeView: View {
                 }
                 dragOffset = value.translation
             }
-            .onEnded { _ in
+            .onEnded { value in
                 isDragging = false
                 guard draggingCardID == cardID else { return }
-                guard let action = dragAction else {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                let translation = value.translation
+                let predicted = value.predictedEndTranslation
+
+                guard let action = releaseAction(translation: translation, predicted: predicted) else {
+                    withAnimation(tossAnimation) {
                         dragOffset = .zero
                     }
                     draggingCardID = nil
                     return
                 }
 
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    dragOffset = swipeTargetOffset(for: action)
+                withAnimation(tossAnimation) {
+                    dragOffset = swipeTargetOffset(
+                        for: action,
+                        initial: releaseDirection(for: action, translation: translation, predicted: predicted)
+                    )
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) {
-                    withAnimation(.easeInOut(duration: 0.32)) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    withAnimation(stackAnimation) {
                         viewModel.swipe(action)
                     }
                     dragOffset = .zero
@@ -204,12 +265,12 @@ struct HomeView: View {
         if draggingCardID == nil {
             draggingCardID = viewModel.currentCard?.id
         }
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(tossAnimation) {
             dragOffset = swipeTargetOffset(for: action, initial: defaultDirection(for: action))
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.26) {
-            withAnimation(.easeInOut(duration: 0.32)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            withAnimation(stackAnimation) {
                 viewModel.swipe(action)
             }
             dragOffset = .zero
@@ -222,17 +283,59 @@ struct HomeView: View {
         let magnitude = max(1, sqrt(direction.width * direction.width + direction.height * direction.height))
         let offscreenDistance = max(800, magnitude * 2.2)
 
-        switch action {
-        case .match:
-            if direction.width < 120 { direction.width = 120 }
-        case .skip:
-            if direction.width > -120 { direction.width = -120 }
-        case .save:
-            if direction.height > -120 { direction.height = -120 }
+        // Only clamp fallback drag vectors. Explicit release vectors should preserve trajectory.
+        if initial == nil {
+            switch action {
+            case .match:
+                if direction.width < 120 { direction.width = 120 }
+            case .skip:
+                if direction.width > -120 { direction.width = -120 }
+            case .save:
+                if direction.height > -120 { direction.height = -120 }
+            }
         }
 
         let scale = offscreenDistance / magnitude
         return CGSize(width: direction.width * scale, height: direction.height * scale)
+    }
+
+    private func releaseAction(translation: CGSize, predicted: CGSize) -> SwipeAction? {
+        if translation.width > 120 || predicted.width > 180 { return .match }
+        if translation.width < -120 || predicted.width < -180 { return .skip }
+        if translation.height < -120 || predicted.height < -220 { return .save }
+        return nil
+    }
+
+    private func releaseDirection(for action: SwipeAction, translation: CGSize, predicted: CGSize) -> CGSize {
+        let momentum = CGSize(
+            width: predicted.width - translation.width,
+            height: predicted.height - translation.height
+        )
+
+        var direction = CGSize(
+            width: translation.width + (momentum.width * 1.1),
+            height: translation.height + (momentum.height * 0.9)
+        )
+
+        switch action {
+        case .match:
+            // Add slight upward lift so horizontal swipes feel like a toss, not a flat slide.
+            direction.height -= min(120, abs(momentum.width) * 0.18)
+            if direction.height > -28 { direction.height = -28 }
+            if direction.width < 160 { direction.width = 160 }
+        case .skip:
+            direction.height -= min(120, abs(momentum.width) * 0.18)
+            if direction.height > -28 { direction.height = -28 }
+            if direction.width > -160 { direction.width = -160 }
+        case .save:
+            if direction.height > -220 { direction.height = -220 }
+            if abs(direction.width) > 90 { direction.width = direction.width.sign == .minus ? -90 : 90 }
+        }
+
+        if abs(direction.width) < 10 && abs(direction.height) < 10 {
+            return defaultDirection(for: action)
+        }
+        return direction
     }
 
     private func defaultDirection(for action: SwipeAction) -> CGSize {
@@ -248,18 +351,20 @@ struct HomeView: View {
 
     private func stackScale(for index: Int, isTop: Bool) -> CGFloat {
         if isTop { return 1.0 }
-        return index == 1 ? 0.98 : 0.96
+        return index == 1 ? 0.965 : 0.93
     }
 
     private func stackOffset(for index: Int, isTop: Bool) -> CGFloat {
         if isTop { return 0 }
-        return index == 1 ? 10 : 20
+        return index == 1 ? 18 : 36
     }
 
     private func stackOpacity(for index: Int, isTop: Bool) -> Double {
-        if isTop { return 1.0 }
-        return index == 1 ? 0.94 : 0.88
+        _ = index
+        _ = isTop
+        return 1.0
     }
+
 }
 
 struct HomeCardView: View {
@@ -267,8 +372,6 @@ struct HomeCardView: View {
     let userRole: UserRole
     let cardWidth: CGFloat
     let cardHeight: CGFloat
-    let showBadge: Bool
-    let dragAction: SwipeAction?
 
     var body: some View {
         GeometryReader { proxy in
@@ -293,13 +396,6 @@ struct HomeCardView: View {
                     .background(Color.black)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .overlay {
-                if showBadge, let action = dragAction {
-                    SwipeBadge(action: action)
-                        .padding(20)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: badgeAlignment(for: action))
-                }
-            }
         }
         .frame(height: cardHeight)
         .background(
@@ -311,7 +407,7 @@ struct HomeCardView: View {
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .stroke(Color.white.opacity(0.12), lineWidth: 1)
         )
-        .shadow(color: Color.black.opacity(0.6), radius: 28, x: 0, y: 18)
+        .compositingGroup()
         .frame(maxWidth: cardWidth)
     }
 
@@ -432,16 +528,6 @@ struct HomeCardView: View {
         .clipped()
     }
 
-    private func badgeAlignment(for action: SwipeAction) -> Alignment {
-        switch action {
-        case .match:
-            return .topLeading
-        case .skip:
-            return .topTrailing
-        case .save:
-            return .top
-        }
-    }
 }
 
 struct ActionButton: View {

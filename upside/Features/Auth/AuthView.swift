@@ -42,36 +42,12 @@ struct AuthView: View {
                 Spacer()
 
                 VStack(spacing: 16) {
-                    SignInWithAppleButton(
-                        onRequest: { request in
-                            request.requestedScopes = [.fullName, .email]
-                        },
-                        onCompletion: { result in
+                    AppleSignInButton(
+                        onTap: {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
                             impactFeedback.impactOccurred()
-
-                            switch result {
-                            case .success(let authorization):
-                                if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-                                    let userID = appleIDCredential.user
-                                    let email = appleIDCredential.email ?? ""
-                                    let fullName = appleIDCredential.fullName
-                                    let name = [fullName?.givenName, fullName?.familyName].compactMap { $0 }.joined(separator: " ")
-
-                                    authManager.user = User(id: userID, email: email, name: name.isEmpty ? "Apple User" : name)
-                                    authManager.isAuthenticated = true
-                                }
-                            case .failure(let error):
-                                print("Apple Sign In failed: \(error)")
-                            }
+                            authManager.signInWithApple()
                         }
-                    )
-                    .signInWithAppleButtonStyle(.white)
-                    .frame(height: 56)
-                    .cornerRadius(28)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
                     )
                     .opacity(isAnimated ? 1 : 0)
                     .offset(y: isAnimated ? 0 : 20)
@@ -248,6 +224,33 @@ struct GoogleSignInButton: View {
                     .frame(width: 18, height: 18)
 
                 Text("Continue with Google")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(Color.white)
+            .cornerRadius(28)
+            .overlay(
+                RoundedRectangle(cornerRadius: 28)
+                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+            )
+            .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 8)
+        }
+    }
+}
+
+struct AppleSignInButton: View {
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 12) {
+                Image(systemName: "apple.logo")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.black)
+
+                Text("Continue with Apple")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.black)
             }
