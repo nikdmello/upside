@@ -167,7 +167,7 @@ struct NotificationPermissionSheet: View {
     }
 
     private func startNotificationCarousel() {
-        Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+        Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { _ in
             withAnimation(.easeInOut(duration: 0.6)) {
                 currentNotificationIndex = (currentNotificationIndex + 1) % notifications.count
             }
