@@ -4,13 +4,17 @@ struct ContentView: View {
     @State private var showSplash = true
 
     var body: some View {
-        ZStack {
-            OnboardingCoordinatorView(showSplash: showSplash)
-                .tint(.upsideGreen)
-                .accentColor(.upsideGreen)
+        GeometryReader { geo in
+            let safeAreaTop = geo.safeAreaInsets.top
 
-            if showSplash {
-                SplashView(show: $showSplash)
+            ZStack {
+                OnboardingCoordinatorView(showSplash: showSplash, safeAreaTop: safeAreaTop)
+                    .tint(.upsideGreen)
+                    .accentColor(.upsideGreen)
+
+                if showSplash {
+                    SplashView(show: $showSplash, safeAreaTop: safeAreaTop)
+                }
             }
         }
     }

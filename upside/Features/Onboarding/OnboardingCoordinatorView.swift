@@ -2,6 +2,7 @@ import SwiftUI
 
 struct OnboardingCoordinatorView: View {
     let showSplash: Bool
+    let safeAreaTop: CGFloat
     @StateObject private var onboardingState = OnboardingState()
 
     var body: some View {
@@ -18,6 +19,7 @@ struct OnboardingCoordinatorView: View {
                 case .welcome:
                     WelcomeView(
                         showSplash: showSplash,
+                        safeAreaTop: safeAreaTop,
                         onSignUp: {
                             withAnimation(.easeInOut(duration: 0.3)) {
                                 onboardingState.startSignUp()
@@ -193,5 +195,5 @@ struct OnboardingCoordinatorView: View {
 }
 
 #Preview {
-    OnboardingCoordinatorView(showSplash: false)
+    OnboardingCoordinatorView(showSplash: false, safeAreaTop: 0)
 }

@@ -5,12 +5,13 @@ extension Color {
 }
 
 struct UpsideLogo: View {
+    var width: CGFloat? = nil
     var height: CGFloat = 90
 
     var body: some View {
         Image("UpsideAppIcon")
             .resizable()
             .scaledToFit()
-            .frame(height: height)
+            .frame(width: width, height: height)
     }
 }

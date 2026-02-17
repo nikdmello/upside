@@ -1,18 +1,24 @@
 import SwiftUI
 
 enum BrandLogo {
-    static let height: CGFloat = 90
+    static let width: CGFloat = 264
+    static let height: CGFloat = 108
     static let scale: CGFloat = 1.0
-    static let topPadding: CGFloat = 12
+    static let topPadding: CGFloat = 18
+    static let launchStartYOffset: CGFloat = 50
+
+    static func topInset(safeAreaTop: CGFloat) -> CGFloat {
+        safeAreaTop + topPadding
+    }
 
     static func topY(safeAreaTop: CGFloat) -> CGFloat {
-        safeAreaTop + topPadding + (height * scale / 2)
+        topInset(safeAreaTop: safeAreaTop) + (height * scale / 2)
     }
 }
 
 struct BrandLogoView: View {
     var body: some View {
-        UpsideLogo(height: BrandLogo.height)
-            .frame(height: BrandLogo.height)
+        UpsideLogo(width: BrandLogo.width, height: BrandLogo.height)
+            .frame(width: BrandLogo.width, height: BrandLogo.height)
     }
 }
