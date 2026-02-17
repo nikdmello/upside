@@ -43,47 +43,25 @@ struct ProfileNavigationButtons: View {
     var body: some View {
         HStack(spacing: 16) {
             if canGoBack {
-                Button(action: {
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                    impactFeedback.impactOccurred()
-                    onBack()
-                }) {
-                    Text("Back")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.white.opacity(0.85))
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.black)
-                        .cornerRadius(28)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 28)
-                                .stroke(Color.white.opacity(0.25), lineWidth: 1)
-                        )
-                }
+                OnboardingSecondaryButton(
+                    title: "Back",
+                    action: {
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                        onBack()
+                    }
+                )
             }
 
-            Button(action: {
-                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                impactFeedback.impactOccurred()
-                onNext()
-            }) {
-                Text("Continue")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(canGoNext ? .black : .white.opacity(0.6))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(
-                        canGoNext ?
-                        Color.upsideGreen :
-                        Color.upsideGreen.opacity(0.2)
-                    )
-                    .cornerRadius(28)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 28)
-                            .stroke(Color.white.opacity(canGoNext ? 0.08 : 0.05), lineWidth: 1)
-                    )
-            }
-            .disabled(!canGoNext)
+            OnboardingPrimaryButton(
+                title: "Continue",
+                isEnabled: canGoNext,
+                action: {
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                    impactFeedback.impactOccurred()
+                    onNext()
+                }
+            )
         }
     }
 }
@@ -102,12 +80,7 @@ struct ProfileInputField: View {
                 .foregroundColor(.white)
 
             TextField(placeholder, text: $text)
-                .font(.system(size: 18))
-                .foregroundColor(.white)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
-                .background(Color.white.opacity(0.1))
-                .cornerRadius(12)
+                .textFieldStyle(OnboardingTextFieldStyle())
                 .keyboardType(keyboardType)
         }
     }

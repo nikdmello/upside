@@ -14,30 +14,27 @@ struct AuthView: View {
     @State private var demoDragX: CGFloat = 0
     @State private var demoLockedRole: UserRole?
 
+    private var headerTitle: String {
+        isLogin ? "Welcome back" : "Create your\naccount"
+    }
+
+    private var headerSubtitle: String {
+        isLogin
+            ? "Sign in to continue"
+            : "Join as a \(userRole?.displayName.lowercased() ?? "user") and start connecting"
+    }
+
     var body: some View {
         ZStack {
-            Color.black
-                .ignoresSafeArea()
+            OnboardingBackground(style: .subtle, isAnimated: isAnimated)
 
             VStack(spacing: 0) {
-                VStack(spacing: 20) {
-                    Text(isLogin ? "Welcome back" : "Create your\naccount")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .opacity(isAnimated ? 1 : 0)
-                        .offset(y: isAnimated ? 0 : -20)
-                        .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
-
-                    Text(isLogin ? "Sign in to continue" : "Join as a \(userRole?.displayName.lowercased() ?? "user") and start connecting")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.7))
-                        .multilineTextAlignment(.center)
-                        .opacity(isAnimated ? 1 : 0)
-                        .offset(y: isAnimated ? 0 : -20)
-                        .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
-                }
+                OnboardingHeader(title: headerTitle, subtitle: headerSubtitle)
+                    .opacity(isAnimated ? 1 : 0)
+                    .offset(y: isAnimated ? 0 : -20)
+                    .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
                 .padding(.top, 80)
+                .padding(.horizontal, OnboardingTheme.horizontalPadding)
 
                 Spacer()
 
@@ -187,8 +184,8 @@ struct AuthView: View {
                     .animation(.easeOut(duration: 0.6).delay(1.2), value: isAnimated)
                     #endif
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 50)
+                .padding(.horizontal, OnboardingTheme.horizontalPadding)
+                .padding(.bottom, OnboardingTheme.bottomPadding)
             }
         }
         .onAppear {
@@ -216,27 +213,11 @@ struct GoogleSignInButton: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                Image("GoogleG")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 18, height: 18)
-
-                Text("Continue with Google")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.black)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(Color.white)
-            .cornerRadius(28)
-            .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 8)
-        }
+        OnboardingSocialButton(
+            title: "Continue with Google",
+            assetIcon: "GoogleG",
+            action: onTap
+        )
     }
 }
 
@@ -244,26 +225,11 @@ struct AppleSignInButton: View {
     let onTap: () -> Void
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 12) {
-                Image(systemName: "apple.logo")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.black)
-
-                Text("Continue with Apple")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.black)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(Color.white)
-            .cornerRadius(28)
-            .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.2), radius: 12, x: 0, y: 8)
-        }
+        OnboardingSocialButton(
+            title: "Continue with Apple",
+            systemIcon: "apple.logo",
+            action: onTap
+        )
     }
 }
 
@@ -276,21 +242,21 @@ struct AuthButton: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Image(systemName: icon)
                     .font(.system(size: 16, weight: .semibold))
 
                 Text(title)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
             }
             .foregroundColor(foregroundColor)
             .frame(maxWidth: .infinity)
-            .frame(height: 56)
+            .frame(height: OnboardingTheme.secondaryButtonHeight)
             .background(backgroundColor)
-            .cornerRadius(28)
+            .clipShape(RoundedRectangle(cornerRadius: OnboardingTheme.socialButtonCornerRadius, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 28)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                RoundedRectangle(cornerRadius: OnboardingTheme.socialButtonCornerRadius, style: .continuous)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1)
             )
         }
     }

@@ -2,19 +2,20 @@ import SwiftUI
 
 struct WelcomeView: View {
     let showSplash: Bool
+    let safeAreaTop: CGFloat
     let onSignUp: () -> Void
     let onLogin: () -> Void
     @State private var isAnimated = false
 
     var body: some View {
         GeometryReader { geo in
-            let topY = BrandLogo.topY(safeAreaTop: geo.safeAreaInsets.top)
+            let logoTopInset = BrandLogo.topInset(safeAreaTop: safeAreaTop)
 
             ZStack {
                 WelcomeBackground(isAnimated: isAnimated)
 
                 VStack(spacing: 0) {
-                    Spacer().frame(height: BrandLogo.topPadding + geo.safeAreaInsets.top + (BrandLogo.height * BrandLogo.scale))
+                    Spacer().frame(height: logoTopInset + (BrandLogo.height * BrandLogo.scale))
 
                     Spacer()
 
@@ -116,11 +117,13 @@ struct WelcomeView: View {
 
                 BrandLogoView()
                     .scaleEffect(BrandLogo.scale)
-                    .position(x: geo.size.width / 2, y: topY)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, logoTopInset)
                     .opacity(showSplash ? 0 : 1)
             }
             .frame(width: geo.size.width, height: geo.size.height, alignment: .center)
         }
+        .ignoresSafeArea()
         .onAppear {
             if !showSplash {
                 isAnimated = true
@@ -135,7 +138,7 @@ struct WelcomeView: View {
 }
 
 #Preview {
-    WelcomeView(showSplash: false, onSignUp: {}, onLogin: {})
+    WelcomeView(showSplash: false, safeAreaTop: 0, onSignUp: {}, onLogin: {})
 }
 
 struct WelcomeBackground: View {

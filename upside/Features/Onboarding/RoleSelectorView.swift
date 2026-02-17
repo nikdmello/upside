@@ -7,20 +7,18 @@ struct RoleSelectorView: View {
 
     var body: some View {
         ZStack {
-            Color.black
-                .ignoresSafeArea()
+            OnboardingBackground(style: .subtle, isAnimated: isAnimated)
 
             VStack(spacing: 0) {
-                VStack(spacing: 20) {
-                    Text("What are you\nhere to do?")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .opacity(isAnimated ? 1 : 0)
-                        .offset(y: isAnimated ? 0 : -20)
-                        .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
-                }
+                OnboardingHeader(
+                    title: "What are you\nhere to do?",
+                    subtitle: "Choose your side of the marketplace"
+                )
+                .opacity(isAnimated ? 1 : 0)
+                .offset(y: isAnimated ? 0 : -20)
+                .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
                 .padding(.top, 80)
+                .padding(.horizontal, OnboardingTheme.horizontalPadding)
 
                 Spacer()
 
@@ -57,39 +55,22 @@ struct RoleSelectorView: View {
 
                 Spacer()
 
-                Button(action: {
-                    guard let role = selectedRole else { return }
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                    impactFeedback.impactOccurred()
-                    onRoleSelected(role)
-                }) {
-                    HStack {
-                        Text("Continue")
-                            .font(.system(size: 18, weight: .semibold))
-
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 16, weight: .semibold))
+                OnboardingPrimaryButton(
+                    title: "Continue",
+                    icon: "arrow.right",
+                    isEnabled: selectedRole != nil,
+                    action: {
+                        guard let role = selectedRole else { return }
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                        onRoleSelected(role)
                     }
-                    .foregroundColor(.black)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 60)
-                    .background(
-                        selectedRole != nil ?
-                        Color.upsideGreen :
-                        Color.upsideGreen.opacity(0.2)
-                    )
-                    .cornerRadius(30)
-                    .shadow(
-                        color: selectedRole != nil ? Color.upsideGreen.opacity(0.4) : .clear,
-                        radius: 18, x: 0, y: 10
-                    )
-                }
-                .disabled(selectedRole == nil)
+                )
                 .scaleEffect(isAnimated ? 1.0 : 0.9)
                 .opacity(isAnimated ? 1 : 0)
                 .animation(.easeOut(duration: 0.6).delay(0.8), value: isAnimated)
-                .padding(.horizontal, 32)
-                .padding(.bottom, 50)
+                .padding(.horizontal, OnboardingTheme.horizontalPadding)
+                .padding(.bottom, OnboardingTheme.bottomPadding)
             }
         }
         .onAppear {
@@ -158,7 +139,7 @@ struct RoleCard: View {
             .padding(24)
             .background(
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color.white.opacity(isSelected ? 0.15 : 0.05))
+                    .fill(Color.white.opacity(isSelected ? 0.12 : 0.04))
                     .overlay(
                         RoundedRectangle(cornerRadius: 20)
                             .stroke(

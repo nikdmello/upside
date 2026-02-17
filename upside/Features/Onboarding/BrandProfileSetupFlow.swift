@@ -6,12 +6,7 @@ struct BrandProfileSetupFlow: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.02, green: 0.02, blue: 0.02)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            OnboardingBackground(style: .subtle)
 
             VStack(spacing: 0) {
                 ProfileProgressBar(
