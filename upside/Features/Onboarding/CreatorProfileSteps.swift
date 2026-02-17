@@ -11,7 +11,7 @@ struct CreatorNameView: View {
             VStack(spacing: 48) {
                 VStack(spacing: 12) {
                     Text("What's your name?")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.system(size: OnboardingTheme.headlineSize, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .opacity(isAnimated ? 1 : 0)
@@ -19,8 +19,8 @@ struct CreatorNameView: View {
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimated)
 
                     Text("We'll use this to personalize your experience")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(.system(size: OnboardingTheme.subheadlineSize, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.68))
                         .multilineTextAlignment(.center)
                         .opacity(isAnimated ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isAnimated)
@@ -28,30 +28,16 @@ struct CreatorNameView: View {
 
                 VStack(spacing: 12) {
                     TextField("Enter your full name", text: $profileState.profile.fullName)
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 0)
-                        .padding(.vertical, 16)
-                        .background(Color.clear)
-
-                    Rectangle()
-                        .fill(
-                            profileState.profile.fullName.isEmpty ?
-                            Color.white.opacity(0.2) :
-                            Color.upsideGreen
-                        )
-                        .frame(height: 2)
-                        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: profileState.profile.fullName.isEmpty)
+                        .textFieldStyle(OnboardingTextFieldStyle())
                 }
                 .opacity(isAnimated ? 1 : 0)
                 .offset(y: isAnimated ? 0 : 30)
                 .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.3), value: isAnimated)
             }
-            .padding(.horizontal, 40)
+            .padding(.horizontal, OnboardingTheme.horizontalPadding)
 
             Spacer()
         }
-        .background(Color.black)
         .onAppear {
             isAnimated = true
         }
@@ -74,7 +60,7 @@ struct CreatorAudienceView: View {
             VStack(spacing: 48) {
                 VStack(spacing: 12) {
                     Text("How big is your audience?")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.system(size: OnboardingTheme.headlineSize, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .opacity(isAnimated ? 1 : 0)
@@ -82,8 +68,8 @@ struct CreatorAudienceView: View {
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimated)
 
                     Text("This helps brands find the right match")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(.system(size: OnboardingTheme.subheadlineSize, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.68))
                         .multilineTextAlignment(.center)
                         .opacity(isAnimated ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isAnimated)
@@ -113,11 +99,11 @@ struct CreatorAudienceView: View {
                             .padding(.vertical, 18)
                             .background(
                                 profileState.profile.followerCount == option ?
-                                Color.white.opacity(0.08) : Color.white.opacity(0.03)
+                                Color.white.opacity(0.12) : Color.white.opacity(0.04)
                             )
-                            .cornerRadius(12)
+                            .cornerRadius(14)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 12)
+                                RoundedRectangle(cornerRadius: 14)
                                     .stroke(
                                         profileState.profile.followerCount == option ?
                                         Color.upsideGreen : Color.clear,
@@ -135,7 +121,6 @@ struct CreatorAudienceView: View {
 
             Spacer()
         }
-        .background(Color.black)
         .onAppear {
             isAnimated = true
         }
@@ -154,7 +139,7 @@ struct CreatorRateView: View {
             VStack(spacing: 48) {
                 VStack(spacing: 12) {
                     Text("What's your rate?")
-                        .font(.system(size: 32, weight: .bold))
+                        .font(.system(size: OnboardingTheme.headlineSize, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
                         .multilineTextAlignment(.center)
                         .opacity(isAnimated ? 1 : 0)
@@ -162,8 +147,8 @@ struct CreatorRateView: View {
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.1), value: isAnimated)
 
                     Text("Per Instagram post")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.6))
+                        .font(.system(size: OnboardingTheme.subheadlineSize, weight: .medium, design: .rounded))
+                        .foregroundColor(.white.opacity(0.68))
                         .opacity(isAnimated ? 1 : 0)
                         .animation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.2), value: isAnimated)
                 }
@@ -205,7 +190,6 @@ struct CreatorRateView: View {
 
             Spacer()
         }
-        .background(Color.black)
         .onAppear {
             isAnimated = true
             if let currentRate = Double(profileState.profile.baseRate), currentRate > 0 {
@@ -237,37 +221,24 @@ struct CreatorFinishView: View {
                 }
 
                 VStack(spacing: 16) {
-                    Text("You're all set!")
-                        .font(.system(size: 36, weight: .bold))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .opacity(isAnimated ? 1 : 0)
-                        .offset(y: isAnimated ? 0 : 20)
-                        .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
-
-                    Text("Start connecting with brands\nin the GCC")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.white.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                        .opacity(isAnimated ? 1 : 0)
-                        .offset(y: isAnimated ? 0 : 20)
-                        .animation(.easeOut(duration: 0.6).delay(0.6), value: isAnimated)
+                    OnboardingHeader(
+                        title: "You're all set!",
+                        subtitle: "Start connecting with brands in the GCC",
+                        titleSize: 36
+                    )
+                    .opacity(isAnimated ? 1 : 0)
+                    .offset(y: isAnimated ? 0 : 20)
+                    .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
                 }
 
-                Button(action: {
-                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                    impactFeedback.impactOccurred()
-                    onComplete()
-                }) {
-                    Text("Let's Go!")
-                        .font(.system(size: 22, weight: .bold))
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 60)
-                        .background(Color.upsideGreen)
-                        .cornerRadius(30)
-                        .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
-                }
+                OnboardingPrimaryButton(
+                    title: "Let's Go!",
+                    action: {
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                        impactFeedback.impactOccurred()
+                        onComplete()
+                    }
+                )
                 .scaleEffect(isAnimated ? 1.0 : 0.9)
                 .opacity(isAnimated ? 1 : 0)
                 .animation(.easeOut(duration: 0.6).delay(0.8), value: isAnimated)

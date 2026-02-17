@@ -10,76 +10,62 @@ struct EmailAuthView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.05, green: 0.05, blue: 0.1)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            OnboardingBackground(style: .subtle, isAnimated: isAnimated)
 
             VStack(spacing: 0) {
-                VStack(spacing: 20) {
-                    Text("Sign in with\nemail")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .multilineTextAlignment(.center)
-                        .opacity(isAnimated ? 1 : 0)
-                        .offset(y: isAnimated ? 0 : -20)
-                        .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
-                }
+                OnboardingHeader(
+                    title: "Sign in with\nemail",
+                    subtitle: "Use your email and password"
+                )
+                .opacity(isAnimated ? 1 : 0)
+                .offset(y: isAnimated ? 0 : -20)
+                .animation(.easeOut(duration: 0.6).delay(0.2), value: isAnimated)
                 .padding(.top, 80)
+                .padding(.horizontal, OnboardingTheme.horizontalPadding)
 
                 Spacer()
 
                 VStack(spacing: 20) {
                     VStack(spacing: 16) {
                         TextField("Email", text: $email)
-                            .textFieldStyle(AuthTextFieldStyle())
+                            .textFieldStyle(OnboardingTextFieldStyle())
                             .keyboardType(.emailAddress)
                             .autocapitalization(.none)
 
                         SecureField("Password", text: $password)
-                            .textFieldStyle(AuthTextFieldStyle())
+                            .textFieldStyle(OnboardingTextFieldStyle())
                     }
                     .opacity(isAnimated ? 1 : 0)
                     .offset(y: isAnimated ? 0 : 20)
                     .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
 
-                    Button(action: {
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                        impactFeedback.impactOccurred()
-                        signIn()
-                    }) {
-                        HStack {
-                            if isLoading {
+                    ZStack {
+                        OnboardingPrimaryButton(
+                            title: isLoading ? "Signing In..." : "Sign In",
+                            isEnabled: !(email.isEmpty || password.isEmpty || isLoading),
+                            action: {
+                                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                impactFeedback.impactOccurred()
+                                signIn()
+                            }
+                        )
+
+                        if isLoading {
+                            HStack {
+                                Spacer()
                                 ProgressView()
                                     .progressViewStyle(CircularProgressViewStyle(tint: .black))
                                     .scaleEffect(0.8)
-                            } else {
-                                Text("Sign In")
-                                    .font(.system(size: 18, weight: .semibold))
+                                    .padding(.trailing, 24)
                             }
                         }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.white, Color.gray.opacity(0.9)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                        .cornerRadius(28)
-                        .shadow(color: .white.opacity(0.3), radius: 20, x: 0, y: 10)
                     }
-                    .disabled(email.isEmpty || password.isEmpty || isLoading)
                     .opacity(isAnimated ? 1 : 0)
                     .offset(y: isAnimated ? 0 : 20)
                     .animation(.easeOut(duration: 0.6).delay(0.6), value: isAnimated)
                 }
-                .padding(.horizontal, 32)
-                .padding(.bottom, 50)
+                .padding(.horizontal, OnboardingTheme.horizontalPadding)
+                .padding(.bottom, OnboardingTheme.bottomPadding)
             }
         }
         .onAppear {
@@ -99,20 +85,6 @@ struct EmailAuthView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
             isLoading = false
         }
-    }
-}
-
-struct AuthTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding(16)
-            .background(Color.white.opacity(0.1))
-            .cornerRadius(12)
-            .foregroundColor(.white)
-            .overlay(
-                RoundedRectangle(cornerRadius: 12)
-                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
-            )
     }
 }
 

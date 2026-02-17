@@ -6,13 +6,7 @@ struct CreatorProfileSetupFlow: View {
 
     var body: some View {
         ZStack {
-            // Background gradient matching existing design
-            LinearGradient(
-                colors: [Color.black, Color(red: 0.02, green: 0.02, blue: 0.02)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            OnboardingBackground(style: .subtle)
 
             VStack(spacing: 0) {
                 // Progress indicator
