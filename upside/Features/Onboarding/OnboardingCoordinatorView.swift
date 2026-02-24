@@ -149,7 +149,7 @@ struct OnboardingCoordinatorView: View {
                     }
 
                 case .confirmation:
-                    HomeView(userRole: onboardingState.selectedRole ?? .creator)
+                    HomeTabShellView(userRole: onboardingState.selectedRole ?? .creator)
                         .sheet(isPresented: $onboardingState.showNotificationSheet) {
                             NotificationPermissionSheet(
                                 isPresented: $onboardingState.showNotificationSheet,
