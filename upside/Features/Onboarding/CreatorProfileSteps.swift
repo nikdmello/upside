@@ -154,7 +154,7 @@ struct CreatorRateView: View {
                 }
 
                 VStack(spacing: 32) {
-                    Text("$\(Int(sliderValue))")
+                    Text("AED \(Int(sliderValue))")
                         .font(.system(size: 48, weight: .bold))
                         .foregroundColor(.white)
                         .opacity(isAnimated ? 1 : 0)
@@ -170,13 +170,13 @@ struct CreatorRateView: View {
                             }
 
                         HStack {
-                            Text("$50")
+                            Text("AED 50")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
 
                             Spacer()
 
-                            Text("$2000")
+                            Text("AED 2000")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
                         }

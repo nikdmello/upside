@@ -87,13 +87,13 @@ struct BrandBudgetView: View {
                             }
 
                         HStack {
-                            Text("$1K")
+                            Text("AED 1K")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
 
                             Spacer()
 
-                            Text("$100K+")
+                            Text("AED 100K+")
                                 .font(.system(size: 14, weight: .medium))
                                 .foregroundColor(.white.opacity(0.5))
                         }
@@ -117,18 +117,23 @@ struct BrandBudgetView: View {
 
     private func formatBudget(_ value: Int) -> String {
         if value >= 100000 {
-            return "$100K+"
+            return "AED 100K+"
         } else if value >= 1000 {
-            return "$\(value / 1000)K"
+            return "AED \(value / 1000)K"
         } else {
-            return "$\(value)"
+            return "AED \(value)"
         }
     }
 
     private func extractBudgetValue(_ budgetString: String) -> Int? {
         if budgetString.contains("100K+") { return 100000 }
         if budgetString.contains("K") {
-            let number = budgetString.replacingOccurrences(of: "$", with: "").replacingOccurrences(of: "K", with: "")
+            let number = budgetString
+                .replacingOccurrences(of: "AED", with: "")
+                .replacingOccurrences(of: "$", with: "")
+                .replacingOccurrences(of: "K", with: "")
+                .replacingOccurrences(of: ",", with: "")
+                .trimmingCharacters(in: .whitespaces)
             return (Int(number) ?? 10) * 1000
         }
         return nil
