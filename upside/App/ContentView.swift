@@ -2,7 +2,12 @@ import SwiftUI
 
 private enum AppTestingConfig {
     #if DEBUG
-    static let bypassOnboardingToBrandHome = true
+    static let bypassOnboardingToBrandHome: Bool = {
+        let rawValue = ProcessInfo.processInfo.environment["UPSIDE_BYPASS_ONBOARDING"]?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+        return rawValue == "1" || rawValue == "true" || rawValue == "yes"
+    }()
     #else
     static let bypassOnboardingToBrandHome = false
     #endif

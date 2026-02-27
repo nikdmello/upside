@@ -1,0 +1,15 @@
+.DS_Store
+
+# Xcode user/derived data
+DerivedData/
+*.xcuserstate
+**/xcuserdata/
+
+# Python cache/test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local backend runtime state
+.env
+backend/data/*.sqlite3

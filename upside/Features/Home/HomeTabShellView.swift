@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeTabShellView: View {
     let userRole: UserRole
 
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel: HomeFeedViewModel
     @State private var selectedTab: HomeTab = .home
     @State private var initialInboxConversationID: UUID?
@@ -59,6 +60,12 @@ struct HomeTabShellView: View {
                 initialInboxConversationID = nil
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                viewModel.refreshRemoteState()
+            }
+        }
+        .preferredColorScheme(.dark)
     }
 
     private var totalUnreadCount: Int {
@@ -357,9 +364,9 @@ private struct HomeProfileView: View {
 
             topActionButton(
                 systemImage: "square.and.pencil",
-                foreground: .black,
-                background: .upsideGreen,
-                border: .upsideGreen,
+                foreground: .white.opacity(0.9),
+                background: Color.black,
+                border: Color.white.opacity(0.22),
                 accessibilityLabel: "Edit Profile"
             ) {
                 showProfileEditor = true
@@ -400,9 +407,69 @@ private struct HomeProfileView: View {
     }
 
     #if DEBUG
+    private var syncStatusText: String {
+        switch viewModel.syncState {
+        case .disabled:
+            return "Sync disabled"
+        case .syncing:
+            return "Syncing..."
+        case .synced(let date):
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            formatter.dateStyle = .none
+            return "Synced \(formatter.string(from: date))"
+        case .failed(let message):
+            return "Sync failed: \(message)"
+        }
+    }
+
+    private var syncStatusColor: Color {
+        switch viewModel.syncState {
+        case .disabled:
+            return .white.opacity(0.65)
+        case .syncing:
+            return .upsideGreen
+        case .synced:
+            return .upsideGreen
+        case .failed:
+            return .red.opacity(0.9)
+        }
+    }
+
     private var testingToolsSection: some View {
         DisclosureGroup(isExpanded: $showTestingTools) {
             VStack(alignment: .leading, spacing: 10) {
+                Text(syncStatusText)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(syncStatusColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                HStack(spacing: 10) {
+                    Button("Pull Remote") {
+                        viewModel.refreshRemoteStateForTesting()
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .background(Color.white.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                    Button("Push Remote") {
+                        viewModel.pushRemoteStateForTesting()
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 40)
+                    .background(Color.upsideGreen.opacity(0.3))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                }
+
                 Button("Reset Match Deck") {
                     showResetMatchDeckAlert = true
                 }
@@ -539,7 +606,11 @@ private struct HomePublicProfileSheet: View {
                         .foregroundColor(.white.opacity(0.82))
                 }
             }
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
+        .preferredColorScheme(.dark)
     }
 
     private var displayNameText: String {
@@ -640,6 +711,7 @@ private struct HomePublicProfileSheet: View {
                 .foregroundColor(.white.opacity(0.82))
                 .lineSpacing(2)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
