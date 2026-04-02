@@ -7,6 +7,8 @@ protocol HomeDataStore {
 }
 
 struct HomePersistenceSnapshot: Codable {
+    var schemaVersion: Int
+    var lastUpdatedAt: Date
     var filters: HomeFilters
     var profile: HomeProfileDraft
     var conversations: [Conversation]
@@ -14,12 +16,16 @@ struct HomePersistenceSnapshot: Codable {
     var savedCardKeys: [String]
 
     init(
+        schemaVersion: Int = 1,
+        lastUpdatedAt: Date = Date(),
         filters: HomeFilters,
         profile: HomeProfileDraft,
         conversations: [Conversation],
         swipedCardKeys: [String],
         savedCardKeys: [String] = []
     ) {
+        self.schemaVersion = schemaVersion
+        self.lastUpdatedAt = lastUpdatedAt
         self.filters = filters
         self.profile = profile
         self.conversations = conversations
@@ -28,6 +34,8 @@ struct HomePersistenceSnapshot: Codable {
     }
 
     private enum CodingKeys: String, CodingKey {
+        case schemaVersion
+        case lastUpdatedAt
         case filters
         case profile
         case conversations
@@ -37,6 +45,8 @@ struct HomePersistenceSnapshot: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        schemaVersion = try container.decodeIfPresent(Int.self, forKey: .schemaVersion) ?? 1
+        lastUpdatedAt = try container.decodeIfPresent(Date.self, forKey: .lastUpdatedAt) ?? .distantPast
         filters = try container.decode(HomeFilters.self, forKey: .filters)
         profile = try container.decode(HomeProfileDraft.self, forKey: .profile)
         conversations = try container.decode([Conversation].self, forKey: .conversations)

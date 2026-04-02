@@ -1,6 +1,18 @@
 import SwiftUI
 import Combine
 
+enum HomeSyncState: Equatable {
+    case disabled
+    case syncing
+    case synced(Date)
+    case failed(String)
+
+    var isSyncing: Bool {
+        if case .syncing = self { return true }
+        return false
+    }
+}
+
 final class HomeFeedViewModel: ObservableObject {
     let userRole: UserRole
 
@@ -13,35 +25,85 @@ final class HomeFeedViewModel: ObservableObject {
     @Published var lastAction: SwipeAction?
     @Published var latestMatchConversationID: UUID?
     @Published private(set) var canUndoSkip = false
+    @Published private(set) var syncState: HomeSyncState = .disabled
+    @Published private(set) var requiresReauthentication = false
+    @Published private(set) var reauthenticationMessage: String?
 
-    private let allCards: [HomeCard]
+    private var allCards: [HomeCard]
     private let dataStore: any HomeDataStore
+    private let remoteSync: (any HomeRemoteSyncing)?
+    private let remoteFeed: (any HomeRemoteFeedServing)?
     private var swipedCardKeys: Set<String> = []
     private var lastSkippedCardKey: String?
+    private var lastPersistedSnapshot: HomePersistenceSnapshot?
+    private var pendingSyncTask: Task<Void, Never>?
 
-    init(userRole: UserRole, dataStore: any HomeDataStore = HomePersistenceStore()) {
+    init(
+        userRole: UserRole,
+        dataStore: any HomeDataStore = HomePersistenceStore(),
+        remoteSync: (any HomeRemoteSyncing)? = HomeRemoteSyncService.makeDefault(),
+        remoteFeed: (any HomeRemoteFeedServing)? = HomeRemoteFeedService.makeDefault()
+    ) {
         self.userRole = userRole
         self.dataStore = dataStore
+        self.remoteSync = remoteSync
+        self.remoteFeed = remoteFeed
         self.allCards = HomeFeedViewModel.mockCards(for: userRole)
         self.cards = allCards
         self.conversations = HomeFeedViewModel.mockConversations(for: userRole)
         self.profile = HomeProfileDraft.mock(for: userRole)
         loadPersistedState()
         self.cards = filteredCards()
+
+        if remoteFeed != nil {
+            loadRemoteFeed()
+        }
+
+        if remoteSync != nil {
+            pullRemoteSnapshot()
+        }
     }
 
     var currentCard: HomeCard? {
         cards.first
     }
 
+    deinit {
+        pendingSyncTask?.cancel()
+    }
+
+    func refreshRemoteState() {
+        pullRemoteSnapshot()
+    }
+
+    func completeReauthentication() {
+        requiresReauthentication = false
+        reauthenticationMessage = nil
+        loadRemoteFeed()
+        pullRemoteSnapshot()
+    }
+
+    #if DEBUG
+    func refreshRemoteStateForTesting() {
+        refreshRemoteState()
+    }
+
+    func pushRemoteStateForTesting() {
+        guard let snapshot = lastPersistedSnapshot else { return }
+        scheduleRemotePush(with: snapshot)
+    }
+    #endif
+
     func swipe(_ action: SwipeAction) {
+        guard let activeCard = currentCard else { return }
         lastAction = action
 
-        if action == .save, let card = currentCard {
-            saveCardToShortlist(card)
+        if action == .save {
+            saveCardToShortlist(activeCard)
         }
 
-        if action == .skip, let skippedCard = currentCard {
+        if action == .skip {
+            let skippedCard = activeCard
             lastSkippedCardKey = cardKey(for: skippedCard)
             canUndoSkip = true
         } else {
@@ -49,12 +111,14 @@ final class HomeFeedViewModel: ObservableObject {
             canUndoSkip = false
         }
 
-        if action == .match, let matchedCard = currentCard {
+        if action == .match {
+            let matchedCard = activeCard
             latestMatchConversationID = upsertConversation(for: matchedCard)
             showMatch = true
         }
 
-        removeTopCard()
+        removeTopCard(activeCard)
+        recordRemoteSwipe(for: activeCard, action: action)
     }
 
     func unsaveCard(_ card: HomeCard) {
@@ -69,6 +133,7 @@ final class HomeFeedViewModel: ObservableObject {
         swipedCardKeys.insert(cardKey(for: card))
         cards = filteredCards()
         persistState()
+        recordRemoteSwipe(for: card, action: .skip)
     }
 
     func matchSavedCard(_ card: HomeCard) {
@@ -78,6 +143,7 @@ final class HomeFeedViewModel: ObservableObject {
         showMatch = true
         cards = filteredCards()
         persistState()
+        recordRemoteSwipe(for: card, action: .match)
     }
 
     @discardableResult
@@ -249,6 +315,7 @@ final class HomeFeedViewModel: ObservableObject {
         showMatch = false
         cards = filteredCards()
         persistState()
+        clearRemoteSwipeHistoryForTesting()
     }
 
     func resetHomeDataForTesting() {
@@ -264,10 +331,10 @@ final class HomeFeedViewModel: ObservableObject {
         showMatch = false
         cards = filteredCards()
         persistState()
+        clearRemoteSwipeHistoryForTesting()
     }
 
-    private func removeTopCard() {
-        guard let topCard = currentCard else { return }
+    private func removeTopCard(_ topCard: HomeCard) {
         swipedCardKeys.insert(cardKey(for: topCard))
         cards = filteredCards()
         persistState()
@@ -381,10 +448,38 @@ final class HomeFeedViewModel: ObservableObject {
     private func cardKey(for card: HomeCard) -> String {
         switch card {
         case .brand(let brand):
-            return "brand-\(brand.name.lowercased())"
+            return brand.key
         case .creator(let creator):
-            return "creator-\(creator.handle.lowercased())"
+            return creator.key
         }
+    }
+
+    private func loadRemoteFeed() {
+        guard let remoteFeed else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let fetched = try await remoteFeed.fetchCards(role: self.userRole, limit: 100, offset: 0)
+                guard !fetched.isEmpty else { return }
+                await MainActor.run {
+                    self.applyRemoteFeedCards(fetched)
+                }
+            } catch {
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+                // Keep local mock fallback if feed endpoint is unavailable.
+            }
+        }
+    }
+
+    private func applyRemoteFeedCards(_ fetchedCards: [HomeCard]) {
+        allCards = fetchedCards
+
+        let savedKeys = Set(lastPersistedSnapshot?.savedCardKeys ?? savedCards.map { cardKey(for: $0) })
+        savedCards = fetchedCards.filter { savedKeys.contains(cardKey(for: $0)) }
+        cards = filteredCards()
     }
 
     private func loadPersistedState() {
@@ -397,10 +492,12 @@ final class HomeFeedViewModel: ObservableObject {
         for card in savedCards {
             swipedCardKeys.insert(cardKey(for: card))
         }
+        lastPersistedSnapshot = snapshot
     }
 
-    private func persistState() {
+    private func persistState(syncRemote: Bool = true, timestamp: Date = Date()) {
         let snapshot = HomePersistenceSnapshot(
+            lastUpdatedAt: timestamp,
             filters: filters,
             profile: profile,
             conversations: conversations,
@@ -408,12 +505,244 @@ final class HomeFeedViewModel: ObservableObject {
             savedCardKeys: savedCards.map(cardKey(for:))
         )
         dataStore.save(snapshot, role: userRole)
+        lastPersistedSnapshot = snapshot
+
+        if syncRemote {
+            scheduleRemotePush(with: snapshot)
+        }
+    }
+
+    private func pullRemoteSnapshot() {
+        guard let remoteSync else {
+            syncState = .disabled
+            return
+        }
+
+        Task { [weak self] in
+            guard let self else { return }
+            await MainActor.run {
+                self.syncState = .syncing
+            }
+
+            do {
+                let remoteSnapshot = try await self.pullRemoteSnapshotWithRetry(remoteSync: remoteSync)
+                await MainActor.run {
+                    if let remoteSnapshot {
+                        self.applyRemoteSnapshotIfNewer(remoteSnapshot)
+                    } else if let localSnapshot = self.lastPersistedSnapshot {
+                        self.scheduleRemotePush(with: localSnapshot)
+                    }
+                    self.syncState = .synced(Date())
+                }
+            } catch {
+                if error is CancellationError {
+                    return
+                }
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+                await MainActor.run {
+                    self.syncState = .failed(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func applyRemoteSnapshotIfNewer(_ remoteSnapshot: HomePersistenceSnapshot) {
+        let localTimestamp = lastPersistedSnapshot?.lastUpdatedAt ?? .distantPast
+        guard remoteSnapshot.lastUpdatedAt > localTimestamp else { return }
+
+        filters = remoteSnapshot.filters
+        profile = remoteSnapshot.profile
+        conversations = remoteSnapshot.conversations
+        swipedCardKeys = Set(remoteSnapshot.swipedCardKeys)
+        savedCards = remoteSnapshot.savedCardKeys.compactMap(card(forKey:))
+        for card in savedCards {
+            swipedCardKeys.insert(cardKey(for: card))
+        }
+        cards = filteredCards()
+        lastSkippedCardKey = nil
+        canUndoSkip = false
+
+        persistState(syncRemote: false, timestamp: remoteSnapshot.lastUpdatedAt)
+    }
+
+    private func scheduleRemotePush(with snapshot: HomePersistenceSnapshot) {
+        guard let remoteSync else {
+            syncState = .disabled
+            return
+        }
+
+        pendingSyncTask?.cancel()
+        pendingSyncTask = Task { [weak self] in
+            guard let self else { return }
+
+            do {
+                try await Task.sleep(nanoseconds: 600_000_000)
+            } catch {
+                return
+            }
+
+            await MainActor.run {
+                self.syncState = .syncing
+            }
+
+            do {
+                try await self.pushRemoteSnapshotWithRetry(snapshot, remoteSync: remoteSync)
+                await MainActor.run {
+                    self.syncState = .synced(Date())
+                }
+            } catch {
+                if error is CancellationError {
+                    return
+                }
+
+                if let syncError = error as? HomeRemoteSyncError {
+                    switch syncError {
+                    case .conflict(let conflictSnapshot):
+                        let resolvedSnapshot: HomePersistenceSnapshot?
+                        if let conflictSnapshot {
+                            resolvedSnapshot = conflictSnapshot
+                        } else {
+                            resolvedSnapshot = try? await self.pullRemoteSnapshotWithRetry(remoteSync: remoteSync)
+                        }
+                        await MainActor.run {
+                            if let resolvedSnapshot {
+                                self.applyRemoteSnapshotIfNewer(resolvedSnapshot)
+                            }
+                            self.syncState = .synced(Date())
+                        }
+                        return
+                    default:
+                        break
+                    }
+                }
+
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+
+                await MainActor.run {
+                    self.syncState = .failed(error.localizedDescription)
+                }
+            }
+        }
+    }
+
+    private func pullRemoteSnapshotWithRetry(remoteSync: any HomeRemoteSyncing) async throws -> HomePersistenceSnapshot? {
+        var attempts = 0
+        let maxAttempts = 3
+
+        while true {
+            do {
+                return try await remoteSync.pull(role: userRole)
+            } catch {
+                attempts += 1
+                guard shouldRetrySyncError(error), attempts < maxAttempts else {
+                    throw error
+                }
+                try await Task.sleep(nanoseconds: retryDelayNanos(forAttempt: attempts))
+            }
+        }
+    }
+
+    private func pushRemoteSnapshotWithRetry(
+        _ snapshot: HomePersistenceSnapshot,
+        remoteSync: any HomeRemoteSyncing
+    ) async throws {
+        var attempts = 0
+        let maxAttempts = 3
+        let idempotencyKey = makeRemoteSyncIdempotencyKey(for: snapshot)
+
+        while true {
+            do {
+                try await remoteSync.push(snapshot, role: userRole, idempotencyKey: idempotencyKey)
+                return
+            } catch {
+                if let syncError = error as? HomeRemoteSyncError, case .conflict = syncError {
+                    throw syncError
+                }
+
+                attempts += 1
+                guard shouldRetrySyncError(error), attempts < maxAttempts else {
+                    throw error
+                }
+                try await Task.sleep(nanoseconds: retryDelayNanos(forAttempt: attempts))
+            }
+        }
+    }
+
+    private func shouldRetrySyncError(_ error: Error) -> Bool {
+        if error is CancellationError {
+            return false
+        }
+
+        if error is URLError {
+            return true
+        }
+
+        if let syncError = error as? HomeRemoteSyncError {
+            switch syncError {
+            case .unexpectedStatusCode(let code):
+                return code == 429 || (500...599).contains(code)
+            case .conflict:
+                return false
+            default:
+                return false
+            }
+        }
+
+        return false
+    }
+
+    private func retryDelayNanos(forAttempt attempt: Int) -> UInt64 {
+        // 0.4s, 0.8s, 1.6s...
+        let seconds = pow(2.0, Double(max(0, attempt - 1))) * 0.4
+        return UInt64(seconds * 1_000_000_000)
+    }
+
+    private func makeRemoteSyncIdempotencyKey(for snapshot: HomePersistenceSnapshot) -> String {
+        let millis = Int(snapshot.lastUpdatedAt.timeIntervalSince1970 * 1_000)
+        return "home-state-\(userRole.rawValue)-\(millis)-\(UUID().uuidString.lowercased())"
     }
 
     private func saveCardToShortlist(_ card: HomeCard) {
         let key = cardKey(for: card)
         guard !savedCards.contains(where: { cardKey(for: $0) == key }) else { return }
         savedCards.insert(card, at: 0)
+    }
+
+    private func recordRemoteSwipe(for card: HomeCard, action: SwipeAction) {
+        guard let remoteFeed else { return }
+        let key = cardKey(for: card)
+        Task {
+            do {
+                try await remoteFeed.recordSwipe(role: userRole, cardKey: key, action: action)
+            } catch {
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+                // Best-effort telemetry/event sync; local UX remains responsive.
+            }
+        }
+    }
+
+    private func clearRemoteSwipeHistoryForTesting() {
+        guard let remoteFeed else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await remoteFeed.clearSwipeHistory(role: self.userRole)
+            } catch {
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+                return
+            }
+            await MainActor.run {
+                self.loadRemoteFeed()
+            }
+        }
     }
 
     private func removeFromSaved(_ card: HomeCard) -> Bool {
@@ -427,6 +756,31 @@ final class HomeFeedViewModel: ObservableObject {
 
     private func card(forKey key: String) -> HomeCard? {
         allCards.first { cardKey(for: $0) == key }
+    }
+
+    private func handleUnauthorizedErrorIfNeeded(_ error: Error) async -> Bool {
+        guard isUnauthorizedError(error) else { return false }
+
+        pendingSyncTask?.cancel()
+        await BackendAuthSession.shared.clear()
+        await MainActor.run {
+            self.requiresReauthentication = true
+            self.reauthenticationMessage = "Your session expired. Sign in again to reconnect to Upside."
+            self.syncState = .failed("Session expired. Sign in again.")
+        }
+        return true
+    }
+
+    private func isUnauthorizedError(_ error: Error) -> Bool {
+        if let syncError = error as? HomeRemoteSyncError, case .unauthorized = syncError {
+            return true
+        }
+
+        if let feedError = error as? HomeRemoteFeedError, case .unauthorized = feedError {
+            return true
+        }
+
+        return false
     }
 
     private func cardMatchesFilters(_ card: HomeCard) -> Bool {

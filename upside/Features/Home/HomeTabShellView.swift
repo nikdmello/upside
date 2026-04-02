@@ -2,13 +2,17 @@ import SwiftUI
 
 struct HomeTabShellView: View {
     let userRole: UserRole
+    let onSignOut: () -> Void
 
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel: HomeFeedViewModel
     @State private var selectedTab: HomeTab = .home
     @State private var initialInboxConversationID: UUID?
+    @State private var showReauthentication = false
 
-    init(userRole: UserRole) {
+    init(userRole: UserRole, onSignOut: @escaping () -> Void = {}) {
         self.userRole = userRole
+        self.onSignOut = onSignOut
         _viewModel = StateObject(wrappedValue: HomeFeedViewModel(userRole: userRole))
     }
 
@@ -44,7 +48,7 @@ struct HomeTabShellView: View {
                 }
                 .badge(totalUnreadCount > 0 ? totalUnreadCount : 0)
 
-                HomeProfileView(userRole: userRole, viewModel: viewModel)
+                HomeProfileView(userRole: userRole, viewModel: viewModel, onSignOut: onSignOut)
                     .tag(HomeTab.profile)
                     .tabItem {
                         Label("You", systemImage: "person.crop.circle.fill")
@@ -59,6 +63,28 @@ struct HomeTabShellView: View {
                 initialInboxConversationID = nil
             }
         }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active {
+                viewModel.refreshRemoteState()
+            }
+        }
+        .onChange(of: viewModel.requiresReauthentication) { _, requiresReauthentication in
+            showReauthentication = requiresReauthentication
+        }
+        .fullScreenCover(isPresented: $showReauthentication) {
+            AuthView(
+                userRole: userRole,
+                isLogin: true,
+                supportingMessage: viewModel.reauthenticationMessage,
+                onAuthComplete: { _ in
+                    showReauthentication = false
+                    viewModel.completeReauthentication()
+                },
+                onDemoLogin: nil
+            )
+            .interactiveDismissDisabled()
+        }
+        .preferredColorScheme(.dark)
     }
 
     private var totalUnreadCount: Int {
@@ -75,15 +101,18 @@ private enum HomeTab: Hashable {
 private struct HomeProfileView: View {
     let userRole: UserRole
     @ObservedObject var viewModel: HomeFeedViewModel
+    let onSignOut: () -> Void
 
     @State private var showProfileEditor = false
     @State private var showPublicProfile = false
     @State private var showResetMatchDeckAlert = false
     @State private var showResetHomeDataAlert = false
     @State private var showTestingTools = false
+    @State private var showSignOutAlert = false
 
-    init(userRole: UserRole, viewModel: HomeFeedViewModel) {
+    init(userRole: UserRole, viewModel: HomeFeedViewModel, onSignOut: @escaping () -> Void) {
         self.userRole = userRole
+        self.onSignOut = onSignOut
         _viewModel = ObservedObject(wrappedValue: viewModel)
     }
 
@@ -166,6 +195,14 @@ private struct HomeProfileView: View {
             }
         } message: {
             Text("This clears filters, profile edits, conversations, and swipe progress for this role.")
+        }
+        .alert("Sign out?", isPresented: $showSignOutAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                onSignOut()
+            }
+        } message: {
+            Text("You’ll return to the welcome flow.")
         }
     }
 
@@ -357,12 +394,22 @@ private struct HomeProfileView: View {
 
             topActionButton(
                 systemImage: "square.and.pencil",
-                foreground: .black,
-                background: .upsideGreen,
-                border: .upsideGreen,
+                foreground: .white.opacity(0.9),
+                background: Color.black,
+                border: Color.white.opacity(0.22),
                 accessibilityLabel: "Edit Profile"
             ) {
                 showProfileEditor = true
+            }
+
+            topActionButton(
+                systemImage: "rectangle.portrait.and.arrow.right",
+                foreground: .red.opacity(0.92),
+                background: Color.red.opacity(0.08),
+                border: Color.red.opacity(0.28),
+                accessibilityLabel: "Sign Out"
+            ) {
+                showSignOutAlert = true
             }
         }
     }
@@ -400,9 +447,47 @@ private struct HomeProfileView: View {
     }
 
     #if DEBUG
+    private var syncStatusText: String {
+        switch viewModel.syncState {
+        case .disabled:
+            return "Sync disabled"
+        case .syncing:
+            return "Syncing..."
+        case .synced(let date):
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            formatter.dateStyle = .none
+            return "Synced \(formatter.string(from: date))"
+        case .failed(let message):
+            return "Sync failed: \(message)"
+        }
+    }
+
+    private var syncStatusColor: Color {
+        switch viewModel.syncState {
+        case .disabled:
+            return .white.opacity(0.65)
+        case .syncing:
+            return .upsideGreen
+        case .synced:
+            return .upsideGreen
+        case .failed:
+            return .red.opacity(0.9)
+        }
+    }
+
     private var testingToolsSection: some View {
         DisclosureGroup(isExpanded: $showTestingTools) {
             VStack(alignment: .leading, spacing: 10) {
+                Text(syncStatusText)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(syncStatusColor)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(Color.white.opacity(0.06))
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
                 Button("Reset Match Deck") {
                     showResetMatchDeckAlert = true
                 }
@@ -539,7 +624,11 @@ private struct HomePublicProfileSheet: View {
                         .foregroundColor(.white.opacity(0.82))
                 }
             }
+            .toolbarBackground(.visible, for: .navigationBar)
+            .toolbarBackground(Color.black, for: .navigationBar)
+            .toolbarColorScheme(.dark, for: .navigationBar)
         }
+        .preferredColorScheme(.dark)
     }
 
     private var displayNameText: String {
@@ -640,6 +729,7 @@ private struct HomePublicProfileSheet: View {
                 .foregroundColor(.white.opacity(0.82))
                 .lineSpacing(2)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
         .background(Color.white.opacity(0.05))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

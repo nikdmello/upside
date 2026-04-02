@@ -65,6 +65,25 @@ struct HomeFilters: Equatable, Codable {
     var minimumCreatorEngagementRate: Double? = nil
     var creatorNicheTags: Set<String> = []
 
+    private enum CodingKeys: String, CodingKey {
+        case minimumBrandBudget
+        case brandCampaignTags
+        case minimumCreatorFollowers
+        case minimumCreatorEngagementRate
+        case creatorNicheTags
+    }
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        minimumBrandBudget = try container.decodeIfPresent(Int.self, forKey: .minimumBrandBudget)
+        brandCampaignTags = try container.decodeIfPresent(Set<String>.self, forKey: .brandCampaignTags) ?? []
+        minimumCreatorFollowers = try container.decodeIfPresent(Int.self, forKey: .minimumCreatorFollowers)
+        minimumCreatorEngagementRate = try container.decodeIfPresent(Double.self, forKey: .minimumCreatorEngagementRate)
+        creatorNicheTags = try container.decodeIfPresent(Set<String>.self, forKey: .creatorNicheTags) ?? []
+    }
+
     func activeCount(for role: UserRole) -> Int {
         switch role {
         case .creator:
@@ -89,6 +108,41 @@ struct HomeProfileDraft: Equatable, Codable {
     var location: String
     var email: String
     var websiteOrHandle: String
+
+    private enum CodingKeys: String, CodingKey {
+        case displayName
+        case headline
+        case bio
+        case location
+        case email
+        case websiteOrHandle
+    }
+
+    init(
+        displayName: String,
+        headline: String,
+        bio: String,
+        location: String,
+        email: String,
+        websiteOrHandle: String
+    ) {
+        self.displayName = displayName
+        self.headline = headline
+        self.bio = bio
+        self.location = location
+        self.email = email
+        self.websiteOrHandle = websiteOrHandle
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName) ?? ""
+        headline = try container.decodeIfPresent(String.self, forKey: .headline) ?? ""
+        bio = try container.decodeIfPresent(String.self, forKey: .bio) ?? ""
+        location = try container.decodeIfPresent(String.self, forKey: .location) ?? ""
+        email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
+        websiteOrHandle = try container.decodeIfPresent(String.self, forKey: .websiteOrHandle) ?? ""
+    }
 
     var initials: String {
         let letters = displayName
@@ -162,6 +216,44 @@ struct Conversation: Identifiable, Equatable, Codable {
     var messages: [ChatMessage]
     var lastUpdatedAt: Date
 
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case peerKey
+        case title
+        case subtitle
+        case avatarImageName
+        case isBrand
+        case needsLightAvatarBackground
+        case unreadCount
+        case peerProfile
+        case deal
+        case messages
+        case lastUpdatedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        id = try container.decodeIfPresent(UUID.self, forKey: .id) ?? UUID()
+        peerKey = try container.decodeIfPresent(String.self, forKey: .peerKey) ?? "peer-\(id.uuidString)"
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? "Conversation"
+        subtitle = try container.decodeIfPresent(String.self, forKey: .subtitle) ?? ""
+        avatarImageName = try container.decodeIfPresent(String.self, forKey: .avatarImageName) ?? ""
+        isBrand = try container.decodeIfPresent(Bool.self, forKey: .isBrand) ?? false
+        needsLightAvatarBackground = try container.decodeIfPresent(Bool.self, forKey: .needsLightAvatarBackground) ?? false
+        unreadCount = try container.decodeIfPresent(Int.self, forKey: .unreadCount) ?? 0
+        peerProfile = try container.decodeIfPresent(PeerProfileSummary.self, forKey: .peerProfile) ?? PeerProfileSummary(
+            headline: "",
+            metricLine: "",
+            about: "",
+            tags: [],
+            location: ""
+        )
+        deal = try container.decodeIfPresent(DealProposal.self, forKey: .deal)
+        messages = try container.decodeIfPresent([ChatMessage].self, forKey: .messages) ?? []
+        lastUpdatedAt = try container.decodeIfPresent(Date.self, forKey: .lastUpdatedAt) ?? Date()
+    }
+
     init(
         id: UUID = UUID(),
         peerKey: String,
@@ -196,23 +288,65 @@ struct Conversation: Identifiable, Equatable, Codable {
 }
 
 struct BrandCard: Identifiable, Equatable {
-    let id = UUID()
+    let id: UUID
+    let key: String
     let name: String
     let imageName: String
     let campaign: String
     let budget: String
     let deliverables: String
     let pitch: String
+
+    init(
+        id: UUID = UUID(),
+        key: String? = nil,
+        name: String,
+        imageName: String,
+        campaign: String,
+        budget: String,
+        deliverables: String,
+        pitch: String
+    ) {
+        self.id = id
+        self.name = name
+        self.imageName = imageName
+        self.campaign = campaign
+        self.budget = budget
+        self.deliverables = deliverables
+        self.pitch = pitch
+        self.key = key ?? "brand-\(name.lowercased())"
+    }
 }
 
 struct CreatorCard: Identifiable, Equatable {
-    let id = UUID()
+    let id: UUID
+    let key: String
     let handle: String
     let imageName: String
     let niche: String
     let followers: String
     let engagementRate: String
     let pitch: String
+
+    init(
+        id: UUID = UUID(),
+        key: String? = nil,
+        handle: String,
+        imageName: String,
+        niche: String,
+        followers: String,
+        engagementRate: String,
+        pitch: String
+    ) {
+        self.id = id
+        self.handle = handle
+        self.imageName = imageName
+        self.niche = niche
+        self.followers = followers
+        self.engagementRate = engagementRate
+        self.pitch = pitch
+        self.key = key ?? "creator-\(handle.lowercased())"
+    }
 }
 
 enum HomeCard: Identifiable, Equatable {
