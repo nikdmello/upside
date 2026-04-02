@@ -3,6 +3,7 @@ import SwiftUI
 struct OnboardingCoordinatorView: View {
     let showSplash: Bool
     let safeAreaTop: CGFloat
+    @ObservedObject var appSession: AppSessionStore
     @StateObject private var onboardingState = OnboardingState()
 
     var body: some View {
@@ -36,25 +37,14 @@ struct OnboardingCoordinatorView: View {
                     AuthView(
                         userRole: nil,
                         isLogin: true,
-                        onAuthComplete: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                onboardingState.selectedRole = .creator
-                                onboardingState.currentStep = .accountCreation
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    onboardingState.showNotificationSheet = true
-                                }
-                            }
+                        supportingMessage: nil,
+                        onAuthComplete: { user in
+                            appSession.completeSignIn(role: .creator, user: user)
+                            onboardingState.selectedRole = .creator
                         },
                         onDemoLogin: { role in
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                onboardingState.selectedRole = role
-                                onboardingState.currentStep = .confirmation
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    onboardingState.showNotificationSheet = true
-                                }
-                            }
+                            appSession.completeSignIn(role: role, user: nil)
+                            onboardingState.selectedRole = role
                         }
                     )
 
@@ -78,11 +68,7 @@ struct OnboardingCoordinatorView: View {
                     RoleSelectorView(onRoleSelected: { role in
                         withAnimation(.easeInOut(duration: 0.3)) {
                             onboardingState.selectedRole = role
-                            if role == .creator {
-                                onboardingState.currentStep = .creatorProfile
-                            } else {
-                                onboardingState.currentStep = .brandProfile
-                            }
+                            onboardingState.currentStep = .auth
                         }
                     })
 
@@ -90,24 +76,14 @@ struct OnboardingCoordinatorView: View {
                     AuthView(
                         userRole: onboardingState.selectedRole,
                         isLogin: false,
-                        onAuthComplete: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                onboardingState.currentStep = .accountCreation
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    onboardingState.showNotificationSheet = true
-                                }
-                            }
+                        supportingMessage: nil,
+                        onAuthComplete: { user in
+                            let role = onboardingState.selectedRole ?? .creator
+                            appSession.completeSignIn(role: role, user: user)
                         },
                         onDemoLogin: { role in
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                onboardingState.selectedRole = role
-                                onboardingState.currentStep = .confirmation
-
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                    onboardingState.showNotificationSheet = true
-                                }
-                            }
+                            appSession.completeSignIn(role: role, user: nil)
+                            onboardingState.selectedRole = role
                         }
                     )
 
@@ -149,7 +125,16 @@ struct OnboardingCoordinatorView: View {
                     }
 
                 case .confirmation:
-                    HomeTabShellView(userRole: onboardingState.selectedRole ?? .creator)
+                    HomeTabShellView(
+                        userRole: onboardingState.selectedRole ?? .creator,
+                        onSignOut: {
+                            appSession.signOut()
+                            onboardingState.selectedRole = nil
+                            onboardingState.showNotificationSheet = false
+                            onboardingState.isLoginFlow = false
+                            onboardingState.currentStep = .welcome
+                        }
+                    )
                         .sheet(isPresented: $onboardingState.showNotificationSheet) {
                             NotificationPermissionSheet(
                                 isPresented: $onboardingState.showNotificationSheet,
@@ -190,10 +175,11 @@ struct OnboardingCoordinatorView: View {
                     Spacer()
                 }
             }
+
         }
     }
 }
 
 #Preview {
-    OnboardingCoordinatorView(showSplash: false, safeAreaTop: 0)
+    OnboardingCoordinatorView(showSplash: false, safeAreaTop: 0, appSession: AppSessionStore.shared)
 }

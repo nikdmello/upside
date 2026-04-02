@@ -2,14 +2,17 @@ import SwiftUI
 
 struct HomeTabShellView: View {
     let userRole: UserRole
+    let onSignOut: () -> Void
 
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel: HomeFeedViewModel
     @State private var selectedTab: HomeTab = .home
     @State private var initialInboxConversationID: UUID?
+    @State private var showReauthentication = false
 
-    init(userRole: UserRole) {
+    init(userRole: UserRole, onSignOut: @escaping () -> Void = {}) {
         self.userRole = userRole
+        self.onSignOut = onSignOut
         _viewModel = StateObject(wrappedValue: HomeFeedViewModel(userRole: userRole))
     }
 
@@ -45,7 +48,7 @@ struct HomeTabShellView: View {
                 }
                 .badge(totalUnreadCount > 0 ? totalUnreadCount : 0)
 
-                HomeProfileView(userRole: userRole, viewModel: viewModel)
+                HomeProfileView(userRole: userRole, viewModel: viewModel, onSignOut: onSignOut)
                     .tag(HomeTab.profile)
                     .tabItem {
                         Label("You", systemImage: "person.crop.circle.fill")
@@ -65,6 +68,22 @@ struct HomeTabShellView: View {
                 viewModel.refreshRemoteState()
             }
         }
+        .onChange(of: viewModel.requiresReauthentication) { _, requiresReauthentication in
+            showReauthentication = requiresReauthentication
+        }
+        .fullScreenCover(isPresented: $showReauthentication) {
+            AuthView(
+                userRole: userRole,
+                isLogin: true,
+                supportingMessage: viewModel.reauthenticationMessage,
+                onAuthComplete: { _ in
+                    showReauthentication = false
+                    viewModel.completeReauthentication()
+                },
+                onDemoLogin: nil
+            )
+            .interactiveDismissDisabled()
+        }
         .preferredColorScheme(.dark)
     }
 
@@ -82,15 +101,18 @@ private enum HomeTab: Hashable {
 private struct HomeProfileView: View {
     let userRole: UserRole
     @ObservedObject var viewModel: HomeFeedViewModel
+    let onSignOut: () -> Void
 
     @State private var showProfileEditor = false
     @State private var showPublicProfile = false
     @State private var showResetMatchDeckAlert = false
     @State private var showResetHomeDataAlert = false
     @State private var showTestingTools = false
+    @State private var showSignOutAlert = false
 
-    init(userRole: UserRole, viewModel: HomeFeedViewModel) {
+    init(userRole: UserRole, viewModel: HomeFeedViewModel, onSignOut: @escaping () -> Void) {
         self.userRole = userRole
+        self.onSignOut = onSignOut
         _viewModel = ObservedObject(wrappedValue: viewModel)
     }
 
@@ -173,6 +195,14 @@ private struct HomeProfileView: View {
             }
         } message: {
             Text("This clears filters, profile edits, conversations, and swipe progress for this role.")
+        }
+        .alert("Sign out?", isPresented: $showSignOutAlert) {
+            Button("Cancel", role: .cancel) {}
+            Button("Sign Out", role: .destructive) {
+                onSignOut()
+            }
+        } message: {
+            Text("You’ll return to the welcome flow.")
         }
     }
 
@@ -371,6 +401,16 @@ private struct HomeProfileView: View {
             ) {
                 showProfileEditor = true
             }
+
+            topActionButton(
+                systemImage: "rectangle.portrait.and.arrow.right",
+                foreground: .red.opacity(0.92),
+                background: Color.red.opacity(0.08),
+                border: Color.red.opacity(0.28),
+                accessibilityLabel: "Sign Out"
+            ) {
+                showSignOutAlert = true
+            }
         }
     }
 
@@ -447,28 +487,6 @@ private struct HomeProfileView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color.white.opacity(0.06))
                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                HStack(spacing: 10) {
-                    Button("Pull Remote") {
-                        viewModel.refreshRemoteStateForTesting()
-                    }
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(Color.white.opacity(0.08))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-
-                    Button("Push Remote") {
-                        viewModel.pushRemoteStateForTesting()
-                    }
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 40)
-                    .background(Color.upsideGreen.opacity(0.3))
-                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                }
 
                 Button("Reset Match Deck") {
                     showResetMatchDeckAlert = true

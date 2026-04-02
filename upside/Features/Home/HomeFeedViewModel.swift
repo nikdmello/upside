@@ -6,6 +6,11 @@ enum HomeSyncState: Equatable {
     case syncing
     case synced(Date)
     case failed(String)
+
+    var isSyncing: Bool {
+        if case .syncing = self { return true }
+        return false
+    }
 }
 
 final class HomeFeedViewModel: ObservableObject {
@@ -21,10 +26,13 @@ final class HomeFeedViewModel: ObservableObject {
     @Published var latestMatchConversationID: UUID?
     @Published private(set) var canUndoSkip = false
     @Published private(set) var syncState: HomeSyncState = .disabled
+    @Published private(set) var requiresReauthentication = false
+    @Published private(set) var reauthenticationMessage: String?
 
-    private let allCards: [HomeCard]
+    private var allCards: [HomeCard]
     private let dataStore: any HomeDataStore
     private let remoteSync: (any HomeRemoteSyncing)?
+    private let remoteFeed: (any HomeRemoteFeedServing)?
     private var swipedCardKeys: Set<String> = []
     private var lastSkippedCardKey: String?
     private var lastPersistedSnapshot: HomePersistenceSnapshot?
@@ -33,17 +41,23 @@ final class HomeFeedViewModel: ObservableObject {
     init(
         userRole: UserRole,
         dataStore: any HomeDataStore = HomePersistenceStore(),
-        remoteSync: (any HomeRemoteSyncing)? = HomeRemoteSyncService.makeDefault()
+        remoteSync: (any HomeRemoteSyncing)? = HomeRemoteSyncService.makeDefault(),
+        remoteFeed: (any HomeRemoteFeedServing)? = HomeRemoteFeedService.makeDefault()
     ) {
         self.userRole = userRole
         self.dataStore = dataStore
         self.remoteSync = remoteSync
+        self.remoteFeed = remoteFeed
         self.allCards = HomeFeedViewModel.mockCards(for: userRole)
         self.cards = allCards
         self.conversations = HomeFeedViewModel.mockConversations(for: userRole)
         self.profile = HomeProfileDraft.mock(for: userRole)
         loadPersistedState()
         self.cards = filteredCards()
+
+        if remoteFeed != nil {
+            loadRemoteFeed()
+        }
 
         if remoteSync != nil {
             pullRemoteSnapshot()
@@ -62,6 +76,13 @@ final class HomeFeedViewModel: ObservableObject {
         pullRemoteSnapshot()
     }
 
+    func completeReauthentication() {
+        requiresReauthentication = false
+        reauthenticationMessage = nil
+        loadRemoteFeed()
+        pullRemoteSnapshot()
+    }
+
     #if DEBUG
     func refreshRemoteStateForTesting() {
         refreshRemoteState()
@@ -74,13 +95,15 @@ final class HomeFeedViewModel: ObservableObject {
     #endif
 
     func swipe(_ action: SwipeAction) {
+        guard let activeCard = currentCard else { return }
         lastAction = action
 
-        if action == .save, let card = currentCard {
-            saveCardToShortlist(card)
+        if action == .save {
+            saveCardToShortlist(activeCard)
         }
 
-        if action == .skip, let skippedCard = currentCard {
+        if action == .skip {
+            let skippedCard = activeCard
             lastSkippedCardKey = cardKey(for: skippedCard)
             canUndoSkip = true
         } else {
@@ -88,12 +111,14 @@ final class HomeFeedViewModel: ObservableObject {
             canUndoSkip = false
         }
 
-        if action == .match, let matchedCard = currentCard {
+        if action == .match {
+            let matchedCard = activeCard
             latestMatchConversationID = upsertConversation(for: matchedCard)
             showMatch = true
         }
 
-        removeTopCard()
+        removeTopCard(activeCard)
+        recordRemoteSwipe(for: activeCard, action: action)
     }
 
     func unsaveCard(_ card: HomeCard) {
@@ -108,6 +133,7 @@ final class HomeFeedViewModel: ObservableObject {
         swipedCardKeys.insert(cardKey(for: card))
         cards = filteredCards()
         persistState()
+        recordRemoteSwipe(for: card, action: .skip)
     }
 
     func matchSavedCard(_ card: HomeCard) {
@@ -117,6 +143,7 @@ final class HomeFeedViewModel: ObservableObject {
         showMatch = true
         cards = filteredCards()
         persistState()
+        recordRemoteSwipe(for: card, action: .match)
     }
 
     @discardableResult
@@ -288,6 +315,7 @@ final class HomeFeedViewModel: ObservableObject {
         showMatch = false
         cards = filteredCards()
         persistState()
+        clearRemoteSwipeHistoryForTesting()
     }
 
     func resetHomeDataForTesting() {
@@ -303,10 +331,10 @@ final class HomeFeedViewModel: ObservableObject {
         showMatch = false
         cards = filteredCards()
         persistState()
+        clearRemoteSwipeHistoryForTesting()
     }
 
-    private func removeTopCard() {
-        guard let topCard = currentCard else { return }
+    private func removeTopCard(_ topCard: HomeCard) {
         swipedCardKeys.insert(cardKey(for: topCard))
         cards = filteredCards()
         persistState()
@@ -420,10 +448,38 @@ final class HomeFeedViewModel: ObservableObject {
     private func cardKey(for card: HomeCard) -> String {
         switch card {
         case .brand(let brand):
-            return "brand-\(brand.name.lowercased())"
+            return brand.key
         case .creator(let creator):
-            return "creator-\(creator.handle.lowercased())"
+            return creator.key
         }
+    }
+
+    private func loadRemoteFeed() {
+        guard let remoteFeed else { return }
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let fetched = try await remoteFeed.fetchCards(role: self.userRole, limit: 100, offset: 0)
+                guard !fetched.isEmpty else { return }
+                await MainActor.run {
+                    self.applyRemoteFeedCards(fetched)
+                }
+            } catch {
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+                // Keep local mock fallback if feed endpoint is unavailable.
+            }
+        }
+    }
+
+    private func applyRemoteFeedCards(_ fetchedCards: [HomeCard]) {
+        allCards = fetchedCards
+
+        let savedKeys = Set(lastPersistedSnapshot?.savedCardKeys ?? savedCards.map { cardKey(for: $0) })
+        savedCards = fetchedCards.filter { savedKeys.contains(cardKey(for: $0)) }
+        cards = filteredCards()
     }
 
     private func loadPersistedState() {
@@ -480,6 +536,9 @@ final class HomeFeedViewModel: ObservableObject {
                 }
             } catch {
                 if error is CancellationError {
+                    return
+                }
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
                     return
                 }
                 await MainActor.run {
@@ -559,6 +618,10 @@ final class HomeFeedViewModel: ObservableObject {
                     }
                 }
 
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+
                 await MainActor.run {
                     self.syncState = .failed(error.localizedDescription)
                 }
@@ -589,10 +652,11 @@ final class HomeFeedViewModel: ObservableObject {
     ) async throws {
         var attempts = 0
         let maxAttempts = 3
+        let idempotencyKey = makeRemoteSyncIdempotencyKey(for: snapshot)
 
         while true {
             do {
-                try await remoteSync.push(snapshot, role: userRole)
+                try await remoteSync.push(snapshot, role: userRole, idempotencyKey: idempotencyKey)
                 return
             } catch {
                 if let syncError = error as? HomeRemoteSyncError, case .conflict = syncError {
@@ -637,10 +701,48 @@ final class HomeFeedViewModel: ObservableObject {
         return UInt64(seconds * 1_000_000_000)
     }
 
+    private func makeRemoteSyncIdempotencyKey(for snapshot: HomePersistenceSnapshot) -> String {
+        let millis = Int(snapshot.lastUpdatedAt.timeIntervalSince1970 * 1_000)
+        return "home-state-\(userRole.rawValue)-\(millis)-\(UUID().uuidString.lowercased())"
+    }
+
     private func saveCardToShortlist(_ card: HomeCard) {
         let key = cardKey(for: card)
         guard !savedCards.contains(where: { cardKey(for: $0) == key }) else { return }
         savedCards.insert(card, at: 0)
+    }
+
+    private func recordRemoteSwipe(for card: HomeCard, action: SwipeAction) {
+        guard let remoteFeed else { return }
+        let key = cardKey(for: card)
+        Task {
+            do {
+                try await remoteFeed.recordSwipe(role: userRole, cardKey: key, action: action)
+            } catch {
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+                // Best-effort telemetry/event sync; local UX remains responsive.
+            }
+        }
+    }
+
+    private func clearRemoteSwipeHistoryForTesting() {
+        guard let remoteFeed else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await remoteFeed.clearSwipeHistory(role: self.userRole)
+            } catch {
+                if await self.handleUnauthorizedErrorIfNeeded(error) {
+                    return
+                }
+                return
+            }
+            await MainActor.run {
+                self.loadRemoteFeed()
+            }
+        }
     }
 
     private func removeFromSaved(_ card: HomeCard) -> Bool {
@@ -654,6 +756,31 @@ final class HomeFeedViewModel: ObservableObject {
 
     private func card(forKey key: String) -> HomeCard? {
         allCards.first { cardKey(for: $0) == key }
+    }
+
+    private func handleUnauthorizedErrorIfNeeded(_ error: Error) async -> Bool {
+        guard isUnauthorizedError(error) else { return false }
+
+        pendingSyncTask?.cancel()
+        await BackendAuthSession.shared.clear()
+        await MainActor.run {
+            self.requiresReauthentication = true
+            self.reauthenticationMessage = "Your session expired. Sign in again to reconnect to Upside."
+            self.syncState = .failed("Session expired. Sign in again.")
+        }
+        return true
+    }
+
+    private func isUnauthorizedError(_ error: Error) -> Bool {
+        if let syncError = error as? HomeRemoteSyncError, case .unauthorized = syncError {
+            return true
+        }
+
+        if let feedError = error as? HomeRemoteFeedError, case .unauthorized = feedError {
+            return true
+        }
+
+        return false
     }
 
     private func cardMatchesFilters(_ card: HomeCard) -> Bool {

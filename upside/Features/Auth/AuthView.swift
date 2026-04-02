@@ -4,7 +4,8 @@ import AuthenticationServices
 struct AuthView: View {
     let userRole: UserRole?
     let isLogin: Bool
-    let onAuthComplete: () -> Void
+    let supportingMessage: String?
+    let onAuthComplete: (User?) -> Void
     let onDemoLogin: ((UserRole) -> Void)?
     @State private var isAnimated = false
     @State private var showEmailAuth = false
@@ -39,6 +40,14 @@ struct AuthView: View {
                 Spacer()
 
                 VStack(spacing: 16) {
+                    if let supportingMessage {
+                        Text(supportingMessage)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.white.opacity(0.72))
+                            .multilineTextAlignment(.center)
+                            .padding(.bottom, 4)
+                    }
+
                     AppleSignInButton(
                         onTap: {
                             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -77,7 +86,7 @@ struct AuthView: View {
                     .animation(.easeOut(duration: 0.6).delay(1.0), value: isAnimated)
 
                     #if DEBUG
-                    if !isLogin {
+                    if AppTestingConfiguration.enableDemoMode, onDemoLogin != nil {
                         AuthButton(
                             title: "Demo Login",
                             icon: "hammer.fill",
@@ -185,6 +194,15 @@ struct AuthView: View {
                         .animation(.easeOut(duration: 0.6).delay(1.2), value: isAnimated)
                     }
                     #endif
+
+                    if let authError = authManager.authError {
+                        Text(authError)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color.red.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .padding(.top, 4)
+                            .transition(.opacity)
+                    }
                 }
                 .padding(.horizontal, OnboardingTheme.horizontalPadding)
                 .padding(.bottom, OnboardingTheme.bottomPadding)
@@ -198,14 +216,14 @@ struct AuthView: View {
                 if isDemoLogin, let onDemoLogin {
                     onDemoLogin(demoRole)
                 } else {
-                    onAuthComplete()
+                    onAuthComplete(authManager.user)
                 }
             }
         }
         .sheet(isPresented: $showEmailAuth) {
-            EmailAuthView(onAuthComplete: {
+            EmailAuthView(onAuthComplete: { user in
                 showEmailAuth = false
-                onAuthComplete()
+                onAuthComplete(user)
             })
         }
     }
@@ -265,5 +283,5 @@ struct AuthButton: View {
 }
 
 #Preview {
-    AuthView(userRole: .creator, isLogin: false, onAuthComplete: {}, onDemoLogin: nil)
+    AuthView(userRole: .creator, isLogin: false, supportingMessage: nil, onAuthComplete: { _ in }, onDemoLogin: nil)
 }

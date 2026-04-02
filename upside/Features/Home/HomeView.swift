@@ -145,6 +145,8 @@ struct HomeView: View {
 
             Spacer()
 
+            syncStatusPill
+
             Button(action: { showFilters = true }) {
                 ZStack(alignment: .topTrailing) {
                     Image(systemName: "slider.horizontal.3")
@@ -188,6 +190,92 @@ struct HomeView: View {
                     }
                 }
             }
+        }
+    }
+
+    private var syncStatusPill: some View {
+        HStack(spacing: 6) {
+            Circle()
+                .fill(syncStatusColor)
+                .frame(width: 7, height: 7)
+                .overlay(
+                    Circle()
+                        .stroke(syncStatusColor.opacity(0.35), lineWidth: 3)
+                        .scaleEffect(viewModel.syncState.isSyncing ? 1.55 : 1)
+                        .opacity(viewModel.syncState.isSyncing ? 0.75 : 0)
+                        .animation(
+                            viewModel.syncState.isSyncing
+                            ? .easeOut(duration: 0.9).repeatForever(autoreverses: false)
+                            : .easeOut(duration: 0.2),
+                            value: viewModel.syncState.isSyncing
+                        )
+                )
+
+            Text(syncStatusLabel)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundColor(.white.opacity(0.84))
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(Color.white.opacity(0.06))
+        .clipShape(Capsule())
+        .overlay(
+            Capsule()
+                .stroke(syncStatusBorderColor, lineWidth: 1)
+        )
+        .accessibilityLabel(syncAccessibilityLabel)
+    }
+
+    private var syncStatusLabel: String {
+        switch viewModel.syncState {
+        case .disabled:
+            return "Local"
+        case .syncing:
+            return "Syncing"
+        case .synced:
+            return "Connected"
+        case .failed:
+            return "Offline"
+        }
+    }
+
+    private var syncStatusColor: Color {
+        switch viewModel.syncState {
+        case .disabled:
+            return .white.opacity(0.45)
+        case .syncing:
+            return .upsideGreen
+        case .synced:
+            return .upsideGreen
+        case .failed:
+            return .red.opacity(0.95)
+        }
+    }
+
+    private var syncStatusBorderColor: Color {
+        switch viewModel.syncState {
+        case .disabled:
+            return .white.opacity(0.16)
+        case .syncing:
+            return .upsideGreen.opacity(0.45)
+        case .synced:
+            return .upsideGreen.opacity(0.38)
+        case .failed:
+            return .red.opacity(0.42)
+        }
+    }
+
+    private var syncAccessibilityLabel: String {
+        switch viewModel.syncState {
+        case .disabled:
+            return "Sync is disabled. Using local data only."
+        case .syncing:
+            return "Sync in progress."
+        case .synced:
+            return "Connected and synced."
+        case .failed:
+            return "Sync failed. Offline mode."
         }
     }
 

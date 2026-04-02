@@ -2,13 +2,14 @@ import Foundation
 
 protocol HomeRemoteSyncing {
     func pull(role: UserRole) async throws -> HomePersistenceSnapshot?
-    func push(_ snapshot: HomePersistenceSnapshot, role: UserRole) async throws
+    func push(_ snapshot: HomePersistenceSnapshot, role: UserRole, idempotencyKey: String) async throws
 }
 
 enum HomeRemoteSyncError: LocalizedError {
     case missingConfiguration
     case invalidURL
     case invalidResponse
+    case unauthorized
     case conflict(HomePersistenceSnapshot?)
     case unexpectedStatusCode(Int)
 
@@ -20,6 +21,8 @@ enum HomeRemoteSyncError: LocalizedError {
             return "Remote sync URL is invalid."
         case .invalidResponse:
             return "Remote sync response was invalid."
+        case .unauthorized:
+            return "Unauthorized: check your app auth session or backend token configuration."
         case .conflict:
             return "Remote state is newer than local state."
         case .unexpectedStatusCode(let code):
@@ -35,46 +38,24 @@ private struct HomeRemoteSyncConflictEnvelope: Decodable {
 
 struct HomeRemoteSyncConfiguration {
     let baseURL: URL
-    let authToken: String?
+    let fallbackAuthToken: String?
     let statePath: String
 
     static func fromBundle(_ bundle: Bundle = .main) -> HomeRemoteSyncConfiguration? {
-        let environment = ProcessInfo.processInfo.environment
-
-        func value(for key: String) -> String? {
-            if
-                let bundleValue = bundle.object(forInfoDictionaryKey: key) as? String,
-                !bundleValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-                return bundleValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-
-            if
-                let envValue = environment[key],
-                !envValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            {
-                return envValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-
-            return nil
-        }
-
         guard
-            let rawBaseURL = value(for: "BACKEND_BASE_URL"),
+            let rawBaseURL = BackendRuntimeConfiguration.value(for: "BACKEND_BASE_URL", bundle: bundle),
             let baseURL = URL(string: rawBaseURL)
         else {
             return nil
         }
 
-        let rawPath = value(for: "BACKEND_HOME_STATE_PATH")
+        let rawPath = BackendRuntimeConfiguration.value(for: "BACKEND_HOME_STATE_PATH", bundle: bundle)
         let statePath = (rawPath?.isEmpty == false ? rawPath! : "v1/home-state/me")
             .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
 
-        let token = value(for: "BACKEND_AUTH_TOKEN") ?? value(for: "BACKEND_API_TOKEN")
-
         return HomeRemoteSyncConfiguration(
             baseURL: baseURL,
-            authToken: token?.isEmpty == false ? token : nil,
+            fallbackAuthToken: BackendRuntimeConfiguration.configuredAuthToken(bundle: bundle),
             statePath: statePath
         )
     }
@@ -100,6 +81,9 @@ final class HomeRemoteSyncService: HomeRemoteSyncing {
     }
 
     static func makeDefault(bundle: Bundle = .main, session: URLSession = .shared) -> HomeRemoteSyncService? {
+        guard !AppTestingConfiguration.enableDemoMode else {
+            return nil
+        }
         guard let configuration = HomeRemoteSyncConfiguration.fromBundle(bundle) else {
             return nil
         }
@@ -109,6 +93,9 @@ final class HomeRemoteSyncService: HomeRemoteSyncing {
     func pull(role: UserRole) async throws -> HomePersistenceSnapshot? {
         var request = try request(for: role, method: "GET")
         request.httpBody = nil
+        if let token = await BackendAuthSession.shared.authorizationToken(fallbackToken: configuration.fallbackAuthToken) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
@@ -120,6 +107,9 @@ final class HomeRemoteSyncService: HomeRemoteSyncing {
         }
 
         guard (200..<300).contains(http.statusCode) else {
+            if http.statusCode == 401 {
+                throw HomeRemoteSyncError.unauthorized
+            }
             throw HomeRemoteSyncError.unexpectedStatusCode(http.statusCode)
         }
 
@@ -130,9 +120,14 @@ final class HomeRemoteSyncService: HomeRemoteSyncing {
         return try decoder.decode(HomePersistenceSnapshot.self, from: data)
     }
 
-    func push(_ snapshot: HomePersistenceSnapshot, role: UserRole) async throws {
+    func push(_ snapshot: HomePersistenceSnapshot, role: UserRole, idempotencyKey: String) async throws {
+        let bodyData = try encoder.encode(snapshot)
         var request = try request(for: role, method: "PUT")
-        request.httpBody = try encoder.encode(snapshot)
+        request.httpBody = bodyData
+        request.setValue(idempotencyKey, forHTTPHeaderField: "Idempotency-Key")
+        if let token = await BackendAuthSession.shared.authorizationToken(fallbackToken: configuration.fallbackAuthToken) {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
@@ -145,6 +140,9 @@ final class HomeRemoteSyncService: HomeRemoteSyncing {
         }
 
         guard (200..<300).contains(http.statusCode) else {
+            if http.statusCode == 401 {
+                throw HomeRemoteSyncError.unauthorized
+            }
             throw HomeRemoteSyncError.unexpectedStatusCode(http.statusCode)
         }
     }
@@ -174,10 +172,7 @@ final class HomeRemoteSyncService: HomeRemoteSyncing {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("ios", forHTTPHeaderField: "X-Client-Platform")
-
-        if let token = configuration.authToken {
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
+        request.setValue(UUID().uuidString.lowercased(), forHTTPHeaderField: "X-Request-ID")
 
         return request
     }

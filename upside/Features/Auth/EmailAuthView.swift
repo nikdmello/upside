@@ -6,7 +6,7 @@ struct EmailAuthView: View {
     @State private var password = ""
     @State private var isLoading = false
     @State private var isAnimated = false
-    let onAuthComplete: () -> Void
+    let onAuthComplete: (User?) -> Void
 
     var body: some View {
         ZStack {
@@ -39,25 +39,34 @@ struct EmailAuthView: View {
                     .offset(y: isAnimated ? 0 : 20)
                     .animation(.easeOut(duration: 0.6).delay(0.4), value: isAnimated)
 
-                    ZStack {
-                        OnboardingPrimaryButton(
-                            title: isLoading ? "Signing In..." : "Sign In",
-                            isEnabled: !(email.isEmpty || password.isEmpty || isLoading),
-                            action: {
-                                let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-                                impactFeedback.impactOccurred()
-                                signIn()
-                            }
-                        )
+                    VStack(spacing: 12) {
+                        ZStack {
+                            OnboardingPrimaryButton(
+                                title: isLoading ? "Signing In..." : "Sign In",
+                                isEnabled: !(email.isEmpty || password.isEmpty || isLoading),
+                                action: {
+                                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                                    impactFeedback.impactOccurred()
+                                    signIn()
+                                }
+                            )
 
-                        if isLoading {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                    .progressViewStyle(CircularProgressViewStyle(tint: .black))
-                                    .scaleEffect(0.8)
-                                    .padding(.trailing, 24)
+                            if isLoading {
+                                HStack {
+                                    Spacer()
+                                    ProgressView()
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                                        .scaleEffect(0.8)
+                                        .padding(.trailing, 24)
+                                }
                             }
+                        }
+
+                        if let authError = authManager.authError {
+                            Text(authError)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color.red.opacity(0.9))
+                                .multilineTextAlignment(.center)
                         }
                     }
                     .opacity(isAnimated ? 1 : 0)
@@ -73,21 +82,21 @@ struct EmailAuthView: View {
         }
         .onChange(of: authManager.isAuthenticated) { _, authenticated in
             if authenticated {
-                onAuthComplete()
+                isLoading = false
+                onAuthComplete(authManager.user)
             }
+        }
+        .onChange(of: authManager.authError) { _, _ in
+            isLoading = false
         }
     }
 
     private func signIn() {
         isLoading = true
         authManager.signInWithEmail(email, password: password)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-            isLoading = false
-        }
     }
 }
 
 #Preview {
-    EmailAuthView(onAuthComplete: {})
+    EmailAuthView(onAuthComplete: { _ in })
 }

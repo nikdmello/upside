@@ -1,32 +1,38 @@
 import SwiftUI
 
-private enum AppTestingConfig {
-    #if DEBUG
-    static let bypassOnboardingToBrandHome: Bool = {
-        let rawValue = ProcessInfo.processInfo.environment["UPSIDE_BYPASS_ONBOARDING"]?
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .lowercased()
-        return rawValue == "1" || rawValue == "true" || rawValue == "yes"
-    }()
-    #else
-    static let bypassOnboardingToBrandHome = false
-    #endif
-}
-
 struct ContentView: View {
-    @State private var showSplash = !AppTestingConfig.bypassOnboardingToBrandHome
+    @StateObject private var appSession = AppSessionStore.shared
+    @State private var showSplash = !AppTestingConfiguration.bypassOnboarding
 
     var body: some View {
         GeometryReader { geo in
             let safeAreaTop = geo.safeAreaInsets.top
 
             ZStack {
-                if AppTestingConfig.bypassOnboardingToBrandHome {
-                    HomeTabShellView(userRole: .brand)
+                if AppTestingConfiguration.bypassOnboarding {
+                    HomeTabShellView(
+                        userRole: AppTestingConfiguration.bypassRole,
+                        onSignOut: {
+                            appSession.signOut()
+                        }
+                    )
                         .tint(.upsideGreen)
                         .accentColor(.upsideGreen)
+                } else if appSession.isAuthenticated, let userRole = appSession.userRole {
+                    HomeTabShellView(
+                        userRole: userRole,
+                        onSignOut: {
+                            appSession.signOut()
+                        }
+                    )
+                    .tint(.upsideGreen)
+                    .accentColor(.upsideGreen)
                 } else {
-                    OnboardingCoordinatorView(showSplash: showSplash, safeAreaTop: safeAreaTop)
+                    OnboardingCoordinatorView(
+                        showSplash: showSplash,
+                        safeAreaTop: safeAreaTop,
+                        appSession: appSession
+                    )
                         .tint(.upsideGreen)
                         .accentColor(.upsideGreen)
 

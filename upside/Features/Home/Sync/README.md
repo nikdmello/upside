@@ -11,6 +11,12 @@ Set these keys in `Info.plist` for network sync:
   - Sent as `Authorization: Bearer <token>`
 - `BACKEND_API_TOKEN` (legacy fallback)
   - Sent as `Authorization: Bearer <token>`
+- `BACKEND_FEED_PATH` (optional)
+  - Default: `v1/feed`
+- `BACKEND_SWIPE_PATH` (optional)
+  - Default: `v1/swipes`
+- `BACKEND_SWIPE_RESET_PATH` (optional)
+  - Default: `v1/swipes/me`
 
 If `BACKEND_BASE_URL` is missing, the app runs local-only persistence.
 
@@ -24,6 +30,17 @@ User-scoped endpoint with role query:
   - Request body: `HomePersistenceSnapshot` JSON
   - `2xx`: sync success
   - `409`: server has a newer snapshot; response includes latest server snapshot
+
+Feed and swipe event endpoints:
+
+- `GET /<BACKEND_FEED_PATH>?role=creator|brand&limit=20&offset=0`
+  - `200`: returns card list for the role
+  - Cards may include optional ranking metadata: `matchScore`, `matchReason`, `rankingDebug`
+- `POST /<BACKEND_SWIPE_PATH>`
+  - Body: `{ "role": "...", "cardKey": "...", "action": "skip|save|match" }`
+  - `2xx`: event accepted
+- `DELETE /<BACKEND_SWIPE_RESET_PATH>?role=creator|brand`
+  - `200`: clears swipe history for this user + role (testing reset)
 
 ## Payload
 The app sends/reads this shape (milliseconds since epoch for dates):

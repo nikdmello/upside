@@ -3,6 +3,7 @@ from typing import Any, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 RoleLiteral = Literal["creator", "brand"]
+SwipeActionLiteral = Literal["skip", "save", "match"]
 
 
 class HomeStatePayload(BaseModel):
@@ -19,7 +20,33 @@ class HomeStatePayload(BaseModel):
 
 class HomeStateConflictResponse(BaseModel):
     detail: str
-    current: Optional[HomeStatePayload] = None
+    current: Optional[dict[str, Any]] = None
+
+
+class FeedCardsResponse(BaseModel):
+    cards: list[dict[str, Any]]
+    nextOffset: Optional[int]
+    hasMore: bool
+
+
+class SwipeEventRequest(BaseModel):
+    role: RoleLiteral
+    cardKey: str
+    action: SwipeActionLiteral
+
+
+class SwipeEventResponse(BaseModel):
+    ok: bool = True
+
+
+class SwipeResetResponse(BaseModel):
+    ok: bool = True
+    deleted: int = 0
+
+
+class AuthMeResponse(BaseModel):
+    userId: str
+    email: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
