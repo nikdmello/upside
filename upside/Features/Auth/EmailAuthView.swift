@@ -6,7 +6,20 @@ struct EmailAuthView: View {
     @State private var password = ""
     @State private var isLoading = false
     @State private var isAnimated = false
+    let isLogin: Bool
     let onAuthComplete: (User?) -> Void
+
+    private var title: String {
+        isLogin ? "Sign in with\nemail" : "Create account\nwith email"
+    }
+
+    private var subtitle: String {
+        isLogin ? "Use your email and password" : "Use your email and password to continue"
+    }
+
+    private var actionTitle: String {
+        isLogin ? "Sign In" : "Continue"
+    }
 
     var body: some View {
         ZStack {
@@ -14,8 +27,8 @@ struct EmailAuthView: View {
 
             VStack(spacing: 0) {
                 OnboardingHeader(
-                    title: "Sign in with\nemail",
-                    subtitle: "Use your email and password"
+                    title: title,
+                    subtitle: subtitle
                 )
                 .opacity(isAnimated ? 1 : 0)
                 .offset(y: isAnimated ? 0 : -20)
@@ -42,7 +55,7 @@ struct EmailAuthView: View {
                     VStack(spacing: 12) {
                         ZStack {
                             OnboardingPrimaryButton(
-                                title: isLoading ? "Signing In..." : "Sign In",
+                                title: isLoading ? "\(actionTitle)..." : actionTitle,
                                 isEnabled: !(email.isEmpty || password.isEmpty || isLoading),
                                 action: {
                                     let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -98,5 +111,5 @@ struct EmailAuthView: View {
 }
 
 #Preview {
-    EmailAuthView(onAuthComplete: { _ in })
+    EmailAuthView(isLogin: true, onAuthComplete: { _ in })
 }

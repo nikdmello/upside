@@ -70,6 +70,7 @@ class OnboardingState: ObservableObject {
     }
 
     func startSignUp() {
+        isLoginFlow = false
         currentStep = .roleSelection
     }
 

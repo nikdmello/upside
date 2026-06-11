@@ -5,6 +5,8 @@ struct OnboardingCoordinatorView: View {
     let safeAreaTop: CGFloat
     @ObservedObject var appSession: AppSessionStore
     @StateObject private var onboardingState = OnboardingState()
+    @State private var pendingAuthenticatedUser: User?
+    @State private var shouldCompleteSignInAfterNotifications = false
 
     var body: some View {
         ZStack {
@@ -54,15 +56,6 @@ struct OnboardingCoordinatorView: View {
                             onboardingState.selectRole(role)
                         }
                     })
-                    .sheet(isPresented: $onboardingState.showNotificationSheet) {
-                        NotificationPermissionSheet(
-                            isPresented: $onboardingState.showNotificationSheet,
-                            userRole: onboardingState.selectedRole ?? .creator,
-                            onComplete: {
-                                onboardingState.completeNotifications()
-                            }
-                        )
-                    }
 
                 case .roleSelection:
                     RoleSelectorView(onRoleSelected: { role in
@@ -79,11 +72,13 @@ struct OnboardingCoordinatorView: View {
                         supportingMessage: nil,
                         onAuthComplete: { user in
                             let role = onboardingState.selectedRole ?? .creator
-                            appSession.completeSignIn(role: role, user: user)
+                            pendingAuthenticatedUser = user
+                            onboardingState.currentStep = role == .creator ? .creatorProfile : .brandProfile
                         },
                         onDemoLogin: { role in
-                            appSession.completeSignIn(role: role, user: nil)
                             onboardingState.selectedRole = role
+                            pendingAuthenticatedUser = nil
+                            onboardingState.currentStep = role == .creator ? .creatorProfile : .brandProfile
                         }
                     )
 
@@ -107,20 +102,16 @@ struct OnboardingCoordinatorView: View {
                 case .creatorProfile:
                     CreatorProfileSetupFlow {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            onboardingState.currentStep = .confirmation
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                onboardingState.showNotificationSheet = true
-                            }
+                            shouldCompleteSignInAfterNotifications = true
+                            onboardingState.showNotificationSheet = true
                         }
                     }
 
                 case .brandProfile:
                     BrandProfileSetupFlow {
                         withAnimation(.easeInOut(duration: 0.3)) {
-                            onboardingState.currentStep = .confirmation
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                                onboardingState.showNotificationSheet = true
-                            }
+                            shouldCompleteSignInAfterNotifications = true
+                            onboardingState.showNotificationSheet = true
                         }
                     }
 
@@ -135,16 +126,16 @@ struct OnboardingCoordinatorView: View {
                             onboardingState.currentStep = .welcome
                         }
                     )
-                        .sheet(isPresented: $onboardingState.showNotificationSheet) {
-                            NotificationPermissionSheet(
-                                isPresented: $onboardingState.showNotificationSheet,
-                                userRole: onboardingState.selectedRole ?? .creator,
-                                onComplete: {
-                                    onboardingState.completeNotifications()
-                                }
-                            )
-                        }
                 }
+            }
+            .sheet(isPresented: $onboardingState.showNotificationSheet) {
+                NotificationPermissionSheet(
+                    isPresented: $onboardingState.showNotificationSheet,
+                    userRole: onboardingState.selectedRole ?? .creator,
+                    onComplete: {
+                        completeNotificationFlow()
+                    }
+                )
             }
             .transition(.asymmetric(
                 insertion: .move(edge: .trailing).combined(with: .opacity),
@@ -177,6 +168,20 @@ struct OnboardingCoordinatorView: View {
             }
 
         }
+    }
+
+    private func completeNotificationFlow() {
+        onboardingState.completeNotifications()
+
+        guard shouldCompleteSignInAfterNotifications else {
+            return
+        }
+
+        shouldCompleteSignInAfterNotifications = false
+        let role = onboardingState.selectedRole ?? .creator
+        let resolvedUser = pendingAuthenticatedUser
+        pendingAuthenticatedUser = nil
+        appSession.completeSignIn(role: role, user: resolvedUser)
     }
 }
 

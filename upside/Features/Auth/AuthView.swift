@@ -221,7 +221,7 @@ struct AuthView: View {
             }
         }
         .sheet(isPresented: $showEmailAuth) {
-            EmailAuthView(onAuthComplete: { user in
+            EmailAuthView(isLogin: isLogin, onAuthComplete: { user in
                 showEmailAuth = false
                 onAuthComplete(user)
             })

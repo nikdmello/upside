@@ -139,7 +139,7 @@ struct NotificationPermissionSheet: View {
                     }) {
                         Text("Enable Notifications")
                             .font(.system(size: 18, weight: .semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color.upsideGreen)
